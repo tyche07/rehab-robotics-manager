@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import type { Patient } from '@/lib/types';
 import { LiveDataCharts } from '@/components/dashboard/live-data-charts';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -21,13 +21,15 @@ export default function DashboardPage() {
   const [sessionData, setSessionData] = React.useState<any[]>([]);
 
   const firestore = useFirestore();
+  const { user, isUserLoading: isAuthLoading } = useUser();
 
   // In a real app, you'd scope this to the logged-in user.
   // For this demo, we'll fetch all patients.
+  // The query will only run once we have a user and a firestore instance.
   const patientsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'patients'));
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: patients, isLoading: isLoadingPatients } = useCollection<Patient>(patientsQuery);
 
@@ -42,13 +44,15 @@ export default function DashboardPage() {
     }
   }, [patients, selectedPatientId]);
 
+  const isLoading = isAuthLoading || isLoadingPatients;
+
   return (
     <div className="flex flex-col gap-8">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Live Session Monitor</CardTitle>
           <div className="w-full max-w-xs">
-            {isLoadingPatients ? (
+            {isLoading ? (
                <Skeleton className="h-10 w-full" />
             ) : (
               <Select onValueChange={setSelectedPatientId} value={selectedPatientId ?? ''}>
@@ -78,7 +82,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="flex h-64 items-center justify-center text-muted-foreground">
-              {isLoadingPatients ? <p>Loading patients...</p> : <p>Please select a patient to start a session.</p>}
+              {isLoading ? <p>Authenticating and loading patients...</p> : <p>Please select a patient to start a session.</p>}
             </div>
           )}
         </CardContent>
