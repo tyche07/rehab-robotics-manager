@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { List, Target, LineChart, Activity, Heart, Move3d } from 'lucide-react';
+import { List, Target, LineChart, Activity, Heart } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProgressCharts } from '@/components/patients/progress-charts';
 import { ReportDialog } from '@/components/patients/report-dialog';
@@ -16,6 +16,7 @@ import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Patient } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Move3d } from '@/components/ui/move-3d';
 
 export default function PatientDetailPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
@@ -68,7 +69,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
              <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
                 <span>Age: {patient.age}</span>
                 <Separator orientation="vertical" className="h-4" />
-                <span>{patient.sessions.length} sessions completed</span>
+                <span>{patient.sessions?.length || 0} sessions completed</span>
              </div>
            </div>
         </CardHeader>
@@ -162,7 +163,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {patient.sessions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(session => {
+                  {(patient.sessions || []).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(session => {
                     const maxRom = Math.max(0,...session.data.map(d => d.rangeOfMotion));
                     const peakResistance = Math.max(0,...session.data.map(d => d.robotResistance));
                     return (
@@ -223,5 +224,3 @@ function PatientDetailSkeleton() {
     </div>
   )
 }
-
-    
