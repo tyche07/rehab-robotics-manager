@@ -13,12 +13,9 @@ import {
     GenerateReportInputSchema,
     GenerateReportOutputSchema,
     type GenerateReportInput,
+    type GenerateReportOutput,
     ProcessedGenerateReportInputSchema
 } from '@/lib/types';
-
-
-export type { GenerateReportInput, GenerateReportOutput } from '@/lib/types';
-
 
 export async function generateTherapyReport(
   input: GenerateReportInput

@@ -15,7 +15,8 @@ import { Bot, FileText, Printer, Sparkles } from 'lucide-react';
 import type { Patient } from '@/lib/types';
 import { format } from 'date-fns';
 import { Separator } from '../ui/separator';
-import { generateTherapyReport, type GenerateReportOutput } from '@/ai/flows/generate-report-flow';
+import { generateTherapyReport } from '@/ai/flows/generate-report-flow';
+import type { GenerateReportOutput } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '../ui/skeleton';
 
