@@ -11,7 +11,7 @@ import {
   DialogFooter,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Bot, FileText, Printer, Sparkles } from 'lucide-react';
+import { Bot, FileText, Download, Sparkles } from 'lucide-react';
 import type { Patient } from '@/lib/types';
 import { format } from 'date-fns';
 import { Separator } from '../ui/separator';
@@ -60,6 +60,10 @@ export function ReportDialog({ patient }: ReportDialogProps) {
     }
   }
 
+  const handlePrint = () => {
+      window.print();
+  }
+
   return (
     <>
       <div className="flex gap-2">
@@ -102,15 +106,15 @@ export function ReportDialog({ patient }: ReportDialogProps) {
                     <div className="grid grid-cols-3 gap-4 pt-2">
                       <div className="rounded-md border p-3">
                         <h4 className="font-semibold">Max Range of Motion</h4>
-                        <p className="text-xl font-bold text-foreground">{Math.max(...latestSession.data.map(d => d.rangeOfMotion))}°</p>
+                        <p className="text-xl font-bold text-foreground">{Math.max(0, ...latestSession.data.map(d => d.rangeOfMotion))}°</p>
                       </div>
                       <div className="rounded-md border p-3">
                         <h4 className="font-semibold">Peak Muscle Load</h4>
-                        <p className="text-xl font-bold text-foreground">{Math.max(...latestSession.data.map(d => d.muscleLoad))}%</p>
+                        <p className="text-xl font-bold text-foreground">{Math.max(0, ...latestSession.data.map(d => d.muscleLoad))}%</p>
                       </div>
                       <div className="rounded-md border p-3">
                         <h4 className="font-semibold">Peak Resistance</h4>
-                        <p className="text-xl font-bold text-foreground">{Math.max(...latestSession.data.map(d => d.robotResistance))}%</p>
+                        <p className="text-xl font-bold text-foreground">{Math.max(0, ...latestSession.data.map(d => d.robotResistance))}%</p>
                       </div>
                     </div>
                   </div>
@@ -127,9 +131,9 @@ export function ReportDialog({ patient }: ReportDialogProps) {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => window.print()}>
-                <Printer className="mr-2 h-4 w-4" />
-                Print Report
+              <Button variant="outline" onClick={handlePrint}>
+                <Download className="mr-2 h-4 w-4" />
+                Print / Download PDF
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -190,9 +194,9 @@ export function ReportDialog({ patient }: ReportDialogProps) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAiReportOpen(false)}>Close</Button>
-            <Button onClick={() => window.print()} disabled={isGenerating}>
-                <Printer className="mr-2 h-4 w-4" />
-                Print
+            <Button onClick={handlePrint} disabled={isGenerating}>
+                <Download className="mr-2 h-4 w-4" />
+                Print / Download PDF
             </Button>
           </DialogFooter>
         </DialogContent>

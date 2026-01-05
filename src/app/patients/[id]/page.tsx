@@ -2,13 +2,13 @@ import { notFound } from 'next/navigation';
 import { patients } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { List, Target } from 'lucide-react';
+import { List, Target, LineChart, Activity, Heart } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProgressCharts } from '@/components/patients/progress-charts';
 import { ReportDialog } from '@/components/patients/report-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { Separator } from '@/components/ui/separator';
 
 export default function PatientDetailPage({ params }: { params: { id: string } }) {
   const patient = patients.find((p) => p.id === params.id);
@@ -16,6 +16,11 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
   if (!patient) {
     notFound();
   }
+
+  const latestSession = patient.sessions.length > 0 ? patient.sessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] : null;
+  const maxRom = latestSession ? Math.max(0, ...latestSession.data.map(d => d.rangeOfMotion)) : 0;
+  const peakResistance = latestSession ? Math.max(0, ...latestSession.data.map(d => d.robotResistance)) : 0;
+  const peakMuscleLoad = latestSession ? Math.max(0, ...latestSession.data.map(d => d.muscleLoad)) : 0;
 
   return (
     <div className="space-y-6">
@@ -33,6 +38,8 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
              <CardDescription className="mt-1 text-base">{patient.condition}</CardDescription>
              <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
                 <span>Age: {patient.age}</span>
+                <Separator orientation="vertical" className="h-4" />
+                <span>{patient.sessions.length} sessions completed</span>
              </div>
            </div>
         </CardHeader>
@@ -49,6 +56,46 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
                     </ul>
                 </div>
             </div>
+            {latestSession && (
+                <>
+                <Separator className="my-6" />
+                <div>
+                    <h3 className="mb-4 flex items-center text-lg font-semibold"><LineChart className="mr-2 h-5 w-5 text-primary" /> Latest Session KPIs</h3>
+                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Max Range of Motion</CardTitle>
+                                <Move3d className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{maxRom}°</div>
+                                <p className="text-xs text-muted-foreground">on {format(new Date(latestSession.date), 'MMM d')}</p>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Peak Resistance</CardTitle>
+                                <Activity className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{peakResistance}%</div>
+                                 <p className="text-xs text-muted-foreground">on {format(new Date(latestSession.date), 'MMM d')}</p>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Peak Muscle Load</CardTitle>
+                                <Heart className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{peakMuscleLoad}%</div>
+                                 <p className="text-xs text-muted-foreground">on {format(new Date(latestSession.date), 'MMM d')}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+                </>
+            )}
         </CardContent>
       </Card>
 
@@ -87,8 +134,8 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
                 </TableHeader>
                 <TableBody>
                   {patient.sessions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(session => {
-                    const maxRom = Math.max(...session.data.map(d => d.rangeOfMotion));
-                    const peakResistance = Math.max(...session.data.map(d => d.robotResistance));
+                    const maxRom = Math.max(0,...session.data.map(d => d.rangeOfMotion));
+                    const peakResistance = Math.max(0,...session.data.map(d => d.robotResistance));
                     return (
                       <TableRow key={session.id}>
                         <TableCell>{format(new Date(session.date), 'MMM d, yyyy')}</TableCell>

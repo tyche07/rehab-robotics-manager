@@ -12,9 +12,12 @@ import {
 } from '@/components/ui/select';
 import { patients } from '@/lib/data';
 import type { Patient } from '@/lib/types';
+import { LiveDataCharts } from '@/components/dashboard/live-data-charts';
 
 export default function DashboardPage() {
   const [selectedPatientId, setSelectedPatientId] = React.useState<string | null>(patients[0]?.id ?? null);
+  const [sessionData, setSessionData] = React.useState<any[]>([]);
+
   const selectedPatient = React.useMemo(() => {
     return patients.find(p => p.id === selectedPatientId) || null;
   }, [selectedPatientId]);
@@ -41,7 +44,14 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           {selectedPatient ? (
-            <SessionControls patient={selectedPatient} />
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+               <div className="xl:col-span-2">
+                 <SessionControls patient={selectedPatient} onDataPoint={setSessionData} />
+               </div>
+               <div className="xl:col-span-1">
+                  <LiveDataCharts data={sessionData} />
+               </div>
+            </div>
           ) : (
             <div className="flex h-64 items-center justify-center text-muted-foreground">
               <p>Please select a patient to start a session.</p>

@@ -6,6 +6,14 @@ export interface Biometrics {
   rangeOfMotion: number;
 }
 
+export interface SessionDataPoint {
+    time: number;
+    heartRate: number;
+    muscleLoad: number;
+    rangeOfMotion: number;
+    robotResistance: number;
+}
+
 export interface Session {
   id: string;
   date: string;
