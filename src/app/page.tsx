@@ -10,17 +10,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { patients } from '@/lib/data';
 import type { Patient } from '@/lib/types';
 import { LiveDataCharts } from '@/components/dashboard/live-data-charts';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
-  const [selectedPatientId, setSelectedPatientId] = React.useState<string | null>(patients[0]?.id ?? null);
+  const [selectedPatientId, setSelectedPatientId] = React.useState<string | null>(null);
   const [sessionData, setSessionData] = React.useState<any[]>([]);
 
+  const firestore = useFirestore();
+
+  // In a real app, you'd scope this to the logged-in user.
+  // For this demo, we'll fetch all patients.
+  const patientsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'patients'));
+  }, [firestore]);
+
+  const { data: patients, isLoading: isLoadingPatients } = useCollection<Patient>(patientsQuery);
+
   const selectedPatient = React.useMemo(() => {
-    return patients.find(p => p.id === selectedPatientId) || null;
-  }, [selectedPatientId]);
+    return patients?.find(p => p.id === selectedPatientId) || null;
+  }, [selectedPatientId, patients]);
+
+  // Auto-select the first patient once data is loaded
+  React.useEffect(() => {
+    if (patients && patients.length > 0 && !selectedPatientId) {
+      setSelectedPatientId(patients[0].id);
+    }
+  }, [patients, selectedPatientId]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -28,18 +48,22 @@ export default function DashboardPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Live Session Monitor</CardTitle>
           <div className="w-full max-w-xs">
-            <Select onValueChange={setSelectedPatientId} defaultValue={selectedPatientId ?? undefined}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a patient..." />
-              </SelectTrigger>
-              <SelectContent>
-                {patients.map((patient: Patient) => (
-                  <SelectItem key={patient.id} value={patient.id}>
-                    {patient.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isLoadingPatients ? (
+               <Skeleton className="h-10 w-full" />
+            ) : (
+              <Select onValueChange={setSelectedPatientId} value={selectedPatientId ?? ''}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a patient..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {patients?.map((patient: Patient) => (
+                    <SelectItem key={patient.id} value={patient.id}>
+                      {patient.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -54,7 +78,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="flex h-64 items-center justify-center text-muted-foreground">
-              <p>Please select a patient to start a session.</p>
+              {isLoadingPatients ? <p>Loading patients...</p> : <p>Please select a patient to start a session.</p>}
             </div>
           )}
         </CardContent>

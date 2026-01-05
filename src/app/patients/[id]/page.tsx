@@ -1,26 +1,51 @@
+"use client";
+
+import { useMemo } from 'react';
 import { notFound } from 'next/navigation';
-import { patients } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { List, Target, LineChart, Activity, Heart } from 'lucide-react';
+import { List, Target, LineChart, Activity, Heart, Move3d } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProgressCharts } from '@/components/patients/progress-charts';
 import { ReportDialog } from '@/components/patients/report-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { Patient } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PatientDetailPage({ params }: { params: { id: string } }) {
-  const patient = patients.find((p) => p.id === params.id);
+  const firestore = useFirestore();
+  const patientRef = useMemoFirebase(() => {
+    if (!firestore || !params.id) return null;
+    return doc(firestore, 'patients', params.id);
+  }, [firestore, params.id]);
+
+  const { data: patient, isLoading } = useDoc<Patient>(patientRef);
+
+  const { latestSession, maxRom, peakResistance, peakMuscleLoad } = useMemo(() => {
+    if (!patient || !patient.sessions || patient.sessions.length === 0) {
+      return { latestSession: null, maxRom: 0, peakResistance: 0, peakMuscleLoad: 0 };
+    }
+
+    const sortedSessions = [...patient.sessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const latest = sortedSessions[0];
+    const maxRom = latest ? Math.max(0, ...latest.data.map(d => d.rangeOfMotion)) : 0;
+    const peakResistance = latest ? Math.max(0, ...latest.data.map(d => d.robotResistance)) : 0;
+    const peakMuscleLoad = latest ? Math.max(0, ...latest.data.map(d => d.muscleLoad)) : 0;
+
+    return { latestSession: latest, maxRom, peakResistance, peakMuscleLoad };
+  }, [patient]);
+  
+  if (isLoading) {
+    return <PatientDetailSkeleton />;
+  }
 
   if (!patient) {
     notFound();
   }
-
-  const latestSession = patient.sessions.length > 0 ? patient.sessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] : null;
-  const maxRom = latestSession ? Math.max(0, ...latestSession.data.map(d => d.rangeOfMotion)) : 0;
-  const peakResistance = latestSession ? Math.max(0, ...latestSession.data.map(d => d.robotResistance)) : 0;
-  const peakMuscleLoad = latestSession ? Math.max(0, ...latestSession.data.map(d => d.muscleLoad)) : 0;
 
   return (
     <div className="space-y-6">
@@ -111,7 +136,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
               <CardDescription>Visualizing patient progress over recent sessions.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ProgressCharts sessions={patient.sessions} />
+              <ProgressCharts sessions={patient.sessions || []} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -154,4 +179,43 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
       </Tabs>
     </div>
   );
+}
+
+
+function PatientDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex flex-col items-start gap-6 sm:flex-row">
+          <Skeleton className="h-24 w-24 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-5 w-64" />
+            <div className="mt-4 flex items-center gap-4">
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-5 w-32" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+       <Tabs defaultValue="progress">
+        <TabsList>
+          <TabsTrigger value="progress">Progress Analysis</TabsTrigger>
+          <TabsTrigger value="history">Session History</TabsTrigger>
+        </TabsList>
+        </Tabs>
+    </div>
+  )
 }
