@@ -70,11 +70,11 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           {selectedPatient ? (
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-               <div className="xl:col-span-2">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+               <div className="lg:col-span-3">
                  <SessionControls patient={selectedPatient} onDataPoint={setSessionData} />
                </div>
-               <div className="xl:col-span-1">
+               <div className="lg:col-span-2">
                   <LiveDataCharts data={sessionData} />
                </div>
             </div>
