@@ -1,7 +1,8 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Heart, Activity, Move3d, Bot } from 'lucide-react';
+import { Heart, Activity, Move3d, Bot, ShieldCheck, Zap, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,20 @@ import { AiRecommendationDialog } from './ai-recommendation-dialog';
 import { adjustTherapyParameters } from '@/ai/flows/real-time-therapy-adjustment';
 import type { TherapyParametersOutput } from '@/ai/flows/real-time-therapy-adjustment';
 import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface SessionControlsProps {
   patient: Patient;
@@ -20,6 +35,7 @@ interface SessionControlsProps {
 
 export function SessionControls({ patient, onDataPoint }: SessionControlsProps) {
   const { toast } = useToast();
+  const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionStage, setSessionStage] = useState('warm-up');
   const [heartRate, setHeartRate] = useState(75);
   const [muscleLoad, setMuscleLoad] = useState(20);
@@ -27,6 +43,9 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
   const [robotResistance, setRobotResistance] = useState([15]);
   const [therapistNotes, setTherapistNotes] = useState('');
   const [sessionData, setSessionData] = useState<SessionDataPoint[]>([]);
+
+  const [controlMode, setControlMode] = useState('impedance');
+  const [safetyStatus, setSafetyStatus] = useState('normal'); // normal, warning, error
 
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [aiRecommendation, setAiRecommendation] = useState<TherapyParametersOutput | null>(null);
@@ -47,20 +66,31 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
 
 
   useEffect(() => {
-    const dataInterval = setInterval(() => {
-        addDataPoint();
-    }, 2000);
+    let dataInterval: NodeJS.Timeout;
+    let biometricInterval: NodeJS.Timeout;
 
-    const biometricInterval = setInterval(() => {
-      setHeartRate(hr => Math.min(120, Math.max(70, hr + (Math.random() - 0.5) * 4)));
-      setMuscleLoad(ml => Math.min(100, Math.max(0, ml + (Math.random() - 0.5) * 5)));
-    }, 2000);
+    if (isSessionActive) {
+      dataInterval = setInterval(() => {
+          addDataPoint();
+      }, 2000);
+
+      biometricInterval = setInterval(() => {
+        setHeartRate(hr => Math.min(120, Math.max(70, hr + (Math.random() - 0.5) * 4)));
+        setMuscleLoad(ml => {
+          const newMl = Math.min(100, Math.max(0, ml + (Math.random() - 0.45) * 8));
+          if (newMl > 95) setSafetyStatus('error');
+          else if (newMl > 85) setSafetyStatus('warning');
+          else setSafetyStatus('normal');
+          return newMl;
+        });
+      }, 1500);
+    }
 
     return () => {
         clearInterval(dataInterval);
         clearInterval(biometricInterval);
     };
-  }, [addDataPoint]);
+  }, [isSessionActive, addDataPoint]);
   
   const handleGetAiRecommendation = async () => {
     setIsLoadingAi(true);
@@ -98,9 +128,96 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
         });
     }
   };
+  
+  const handleEmergencyStop = () => {
+    setIsSessionActive(false);
+    setSafetyStatus('error');
+    toast({
+        variant: "destructive",
+        title: "Emergency Stop Activated",
+        description: "The session has been immediately halted.",
+    });
+  }
+
+  const handleSessionToggle = () => {
+    if (isSessionActive) {
+      setIsSessionActive(false);
+      onDataPoint([]); // Clear data on stop
+    } else {
+      setSessionData([]); // Reset data on start
+      setIsSessionActive(true);
+    }
+  }
+
 
   return (
-    <div className="grid grid-cols-1 gap-6">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Robot Control & IoT Layer</CardTitle>
+          <div className="mt-2 flex flex-wrap items-center gap-4">
+             <div className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                <span className="font-medium">IoT Status:</span>
+                <Badge variant={isSessionActive ? "default" : "outline"} className="bg-green-600/20 text-green-400 border-green-600/30">Connected (WebSocket)</Badge>
+            </div>
+             <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                <span className="font-medium">Safety Supervisor:</span>
+                <Badge variant={safetyStatus === 'normal' ? 'default' : safetyStatus === 'warning' ? 'secondary': 'destructive'} 
+                className={
+                  safetyStatus === 'normal' ? 'bg-green-600/20 text-green-400 border-green-600/30' : 
+                  safetyStatus === 'warning' ? 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30' :
+                  'bg-red-600/20 text-red-400 border-red-600/30'
+                }>
+                    {safetyStatus === 'normal' ? 'All Systems Nominal' : safetyStatus === 'warning' ? 'High Force Detected' : 'Threshold Exceeded'}
+                </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="control-mode">Control Mode</Label>
+                <Select value={controlMode} onValueChange={setControlMode} disabled={!isSessionActive}>
+                  <SelectTrigger id="control-mode">
+                    <SelectValue placeholder="Select control mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pid">PID Control</SelectItem>
+                    <SelectItem value="impedance">Impedance Control</SelectItem>
+                    <SelectItem value="admittance">Admittance Control</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end gap-2">
+                  <Button onClick={handleSessionToggle} className="w-full" variant={isSessionActive ? 'secondary' : 'default'}>
+                    {isSessionActive ? 'End Session' : 'Start Session'}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" className="w-full">
+                        <XCircle className="mr-2 h-4 w-4" /> Emergency Stop
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to activate the Emergency Stop?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will immediately and forcefully halt all robotic movement and end the current session. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleEmergencyStop}>Confirm Stop</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+              </div>
+            </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <BiometricCard
           icon={<Heart className="h-6 w-6 text-red-500" />}
@@ -114,7 +231,7 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
           title="Muscle Load"
           value={Math.round(muscleLoad)}
           unit="%"
-          valueClassName={muscleLoad > 80 ? 'text-destructive' : ''}
+          valueClassName={muscleLoad > 85 ? 'text-yellow-400' : ''}
         />
         <BiometricCard
           icon={<Move3d className="h-6 w-6 text-green-500" />}
@@ -135,6 +252,7 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
                 step={1}
                 value={robotResistance}
                 onValueChange={setRobotResistance}
+                disabled={!isSessionActive}
                 />
                 <span className="w-20 text-right font-semibold">{robotResistance[0]}%</span>
             </div>
@@ -149,27 +267,26 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
                 step={1}
                 value={[rangeOfMotion]}
                 onValueChange={(val) => setRangeOfMotion(val[0])}
+                disabled={!isSessionActive}
                 />
                 <span className="w-20 text-right font-semibold">{rangeOfMotion}°</span>
             </div>
         </div>
       </div>
       
-      <div className="space-y-6">
-        <div className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
-           <Label htmlFor="therapist-notes" className="text-lg font-semibold">Therapist Notes</Label>
-           <Textarea 
-             id="therapist-notes" 
-             placeholder="Enter observations..."
-             value={therapistNotes}
-             onChange={(e) => setTherapistNotes(e.target.value)}
-             className="min-h-[100px]"
-           />
-           <Button onClick={handleGetAiRecommendation} disabled={isLoadingAi} className="w-full">
-             <Bot className="mr-2 h-4 w-4" />
-             {isLoadingAi ? "Analyzing..." : "Get AI Recommendation"}
-           </Button>
-        </div>
+      <div className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
+         <Label htmlFor="therapist-notes" className="text-lg font-semibold">Therapist Notes</Label>
+         <Textarea 
+           id="therapist-notes" 
+           placeholder="Enter observations about the session, patient feedback, or events..."
+           value={therapistNotes}
+           onChange={(e) => setTherapistNotes(e.target.value)}
+           className="min-h-[100px]"
+         />
+         <Button onClick={handleGetAiRecommendation} disabled={isLoadingAi || !isSessionActive} className="w-full">
+           <Bot className="mr-2 h-4 w-4" />
+           {isLoadingAi ? "Analyzing..." : "Get AI Recommendation"}
+         </Button>
       </div>
        {aiRecommendation && (
         <AiRecommendationDialog
@@ -182,3 +299,5 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
     </div>
   );
 }
+
+    
