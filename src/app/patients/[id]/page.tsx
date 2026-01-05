@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useMemo } from 'react';
@@ -17,6 +18,8 @@ import { doc } from 'firebase/firestore';
 import type { Patient } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Move3d } from '@/components/ui/move-3d';
+import { Button } from '@/components/ui/button';
+import { Sparkles } from 'lucide-react';
 
 export default function PatientDetailPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
@@ -56,13 +59,14 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-col items-start gap-6 sm:flex-row">
-           <Avatar className="h-24 w-24 border">
-              <AvatarFallback className="text-3xl">{patient.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-           </Avatar>
            <div className="flex-1">
              <div className="flex items-center justify-between">
                 <CardTitle className="text-3xl font-bold">{patient.name}</CardTitle>
-                <ReportDialog patient={patient} />
+                <ReportDialog patient={patient} asTrigger={
+                  <Button variant="outline">
+                    View Report
+                  </Button>
+                } />
              </div>
              <CardDescription className="mt-1 text-base">{patient.condition}</CardDescription>
              <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
@@ -191,7 +195,6 @@ function PatientDetailSkeleton() {
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-col items-start gap-6 sm:flex-row">
-          <Skeleton className="h-24 w-24 rounded-full" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-5 w-64" />

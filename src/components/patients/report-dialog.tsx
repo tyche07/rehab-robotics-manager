@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -22,19 +23,22 @@ import { Skeleton } from '../ui/skeleton';
 
 interface ReportDialogProps {
   patient: Patient;
+  asTrigger?: React.ReactElement;
 }
 
-export function ReportDialog({ patient }: ReportDialogProps) {
+export function ReportDialog({ patient, asTrigger }: ReportDialogProps) {
   const { toast } = useToast();
+  const [isOpen, setIsOpen] = React.useState(false);
   const [isAiReportOpen, setIsAiReportOpen] = React.useState(false);
   const [aiReport, setAiReport] = React.useState<GenerateReportOutput | null>(null);
   const [isGenerating, setIsGenerating] = React.useState(false);
 
-  const latestSession = patient.sessions.length > 0 ? patient.sessions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] : null;
+  const latestSession = patient.sessions && patient.sessions.length > 0 ? [...patient.sessions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] : null;
 
   const handleGenerateAiReport = async () => {
     setIsGenerating(true);
     setAiReport(null);
+    setIsOpen(false); // Close the first dialog
     setIsAiReportOpen(true);
     try {
         const report = await generateTherapyReport({
@@ -44,7 +48,7 @@ export function ReportDialog({ patient }: ReportDialogProps) {
                 condition: patient.condition,
                 therapyGoals: patient.therapyGoals,
             },
-            sessions: patient.sessions,
+            sessions: patient.sessions || [],
         });
         setAiReport(report);
     } catch (error) {
@@ -64,16 +68,22 @@ export function ReportDialog({ patient }: ReportDialogProps) {
       window.print();
   }
 
+  const Trigger = asTrigger ? React.cloneElement(asTrigger, { onClick: () => setIsOpen(true) }) : null;
+
+
   return (
     <>
-      <div className="flex gap-2">
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              <FileText className="mr-2 h-4 w-4" />
-              View Report
-            </Button>
-          </DialogTrigger>
+      {Trigger}
+      
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          {!asTrigger && (
+            <DialogTrigger asChild>
+                <Button variant="outline">
+                    <FileText className="mr-2 h-4 w-4" />
+                    View Report
+                </Button>
+            </DialogTrigger>
+          )}
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Therapy Progress Report</DialogTitle>
@@ -126,24 +136,22 @@ export function ReportDialog({ patient }: ReportDialogProps) {
                 
                 <h3 className="font-semibold text-lg">Overall Progress</h3>
                 <p className="text-sm text-muted-foreground">
-                  Patient has completed {patient.sessions.length} sessions. Consistent improvement is noted in range of motion and ability to handle resistance.
+                  Patient has completed {patient.sessions?.length || 0} sessions. Consistent improvement is noted in range of motion and ability to handle resistance.
                 </p>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={handlePrint}>
-                <Download className="mr-2 h-4 w-4" />
-                Print / Download PDF
-              </Button>
+            <DialogFooter className="justify-between sm:justify-between">
+                <Button onClick={handleGenerateAiReport} disabled={isGenerating}>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {isGenerating ? 'Generating...' : 'Generate AI Summary'}
+                </Button>
+                <Button variant="outline" onClick={handlePrint}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Print / Download PDF
+                </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        <Button onClick={handleGenerateAiReport} disabled={isGenerating}>
-          <Sparkles className="mr-2 h-4 w-4" />
-          {isGenerating ? 'Generating...' : 'Generate AI Report'}
-        </Button>
-      </div>
 
 
       <Dialog open={isAiReportOpen} onOpenChange={setIsAiReportOpen}>

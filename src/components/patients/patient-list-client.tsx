@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -17,8 +18,9 @@ import { useFirestore } from '@/firebase';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import { patients as mockPatients } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, BarChart2 } from 'lucide-react';
 import Link from 'next/link';
+import { ReportDialog } from './report-dialog';
 
 interface PatientListClientProps {
   patients: Patient[];
@@ -30,10 +32,6 @@ export function PatientListClient({ patients, userId }: PatientListClientProps) 
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSeeding, setIsSeeding] = useState(false);
-
-  const handleRowClick = (patientId: string) => {
-    router.push(`/patients/${patientId}`);
-  };
 
   const handleSeedData = async () => {
     if (!firestore || !userId) {
@@ -50,7 +48,6 @@ export function PatientListClient({ patients, userId }: PatientListClientProps) 
       const userPatientsCollection = collection(firestore, 'users', userId, 'patients');
       
       mockPatients.forEach(patient => {
-        // Create a new doc reference in the subcollection
         const docRef = doc(userPatientsCollection);
         batch.set(docRef, patient);
       });
@@ -61,7 +58,6 @@ export function PatientListClient({ patients, userId }: PatientListClientProps) 
         title: "Data Seeded Successfully",
         description: "The initial patient data has been loaded for your user.",
       });
-      // The useCollection hook will automatically update the UI
     } catch (error) {
       console.error("Error seeding data:", error);
       toast({
@@ -99,16 +95,30 @@ export function PatientListClient({ patients, userId }: PatientListClientProps) 
           <TableHead>Name</TableHead>
           <TableHead>Condition</TableHead>
           <TableHead className="text-right">Age</TableHead>
+          <TableHead className="text-center">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {patients.map((patient) => (
-          <TableRow key={patient.id} onClick={() => handleRowClick(patient.id)} className="cursor-pointer">
+          <TableRow key={patient.id} className="group">
             <TableCell className="font-medium">{patient.name}</TableCell>
             <TableCell>
               <Badge variant="secondary">{patient.condition}</Badge>
             </TableCell>
             <TableCell className="text-right">{patient.age}</TableCell>
+            <TableCell className="text-center">
+                <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="sm" onClick={() => router.push(`/patients/${patient.id}`)}>
+                        <BarChart2 className="mr-2 h-4 w-4" />
+                        View Charts
+                    </Button>
+                    <ReportDialog patient={patient} asTrigger={
+                        <Button variant="ghost" size="sm">
+                            View Report
+                        </Button>
+                    } />
+                </div>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
