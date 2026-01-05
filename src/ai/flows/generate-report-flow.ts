@@ -41,6 +41,16 @@ export const GenerateReportInputSchema = z.object({
 });
 export type GenerateReportInput = z.infer<typeof GenerateReportInputSchema>;
 
+const ProcessedSessionInfoSchema = SessionInfoSchema.extend({
+  peakRangeOfMotion: z.number(),
+  peakRobotResistance: z.number(),
+});
+
+const ProcessedGenerateReportInputSchema = z.object({
+  patient: PatientInfoSchema,
+  sessions: z.array(ProcessedSessionInfoSchema),
+});
+
 
 export const GenerateReportOutputSchema = z.object({
   executiveSummary: z.string().describe("A high-level summary of the patient's progress, condition, and therapy engagement. Should be 2-3 sentences."),
@@ -59,7 +69,7 @@ export async function generateTherapyReport(
 
 const generateReportPrompt = ai.definePrompt({
   name: 'generateReportPrompt',
-  input: { schema: GenerateReportInputSchema },
+  input: { schema: ProcessedGenerateReportInputSchema },
   output: { schema: GenerateReportOutputSchema },
   prompt: `You are an expert physical therapist AI assistant creating a progress report.
 
@@ -79,8 +89,8 @@ const generateReportPrompt = ai.definePrompt({
   - Session on {{date}}:
     - Duration: {{duration}} minutes
     - Therapist Notes: "{{notes}}"
-    - Peak Range of Motion: {{Math.max(...data.map(d => d.rangeOfMotion))}}°
-    - Peak Robot Resistance: {{Math.max(...data.map(d => d.robotResistance))}}%
+    - Peak Range of Motion: {{peakRangeOfMotion}}°
+    - Peak Robot Resistance: {{peakRobotResistance}}%
   {{/each}}
 
   Based on all this information, generate the report with an executive summary, a detailed progress analysis, and future recommendations. Be specific and use the data to back up your analysis.
@@ -98,7 +108,19 @@ const generateReportFlow = ai.defineFlow(
     outputSchema: GenerateReportOutputSchema,
   },
   async (input) => {
-    const { output } = await generateReportPrompt(input);
+    // Pre-process the session data to calculate max values before sending to the prompt.
+    const processedSessions = input.sessions.map(session => ({
+        ...session,
+        peakRangeOfMotion: Math.max(...session.data.map(d => d.rangeOfMotion)),
+        peakRobotResistance: Math.max(...session.data.map(d => d.robotResistance)),
+    }));
+
+    const processedInput = {
+        patient: input.patient,
+        sessions: processedSessions,
+    }
+
+    const { output } = await generateReportPrompt(processedInput);
     return output!;
   }
 );
