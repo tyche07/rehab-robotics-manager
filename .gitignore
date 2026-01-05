@@ -10,6 +10,15 @@
 !.yarn/releases
 !.yarn/versions
 
+.env
+.env.local
+.firebase/
+.firebaserc
+*.log
+serviceAccountKey.json
+
+
+
 # testing
 /coverage
 
