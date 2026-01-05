@@ -146,20 +146,20 @@ export default function SchedulingPage() {
   return (
     <>
     <Card>
-      <CardHeader className="flex-row items-center justify-between">
+      <CardHeader className="flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <CardTitle className="text-3xl font-bold">Smart Calendar</CardTitle>
             <CardDescription>AI-assisted, robot-aware, and patient-centric scheduling.</CardDescription>
         </div>
-        <Button onClick={handleGenerateSchedule} disabled={isGenerating}>
+        <Button onClick={handleGenerateSchedule} disabled={isGenerating} className="w-full sm:w-auto">
             {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2" />}
             Generate Optimal Schedule
         </Button>
       </CardHeader>
       <CardContent>
-        <div className="flex gap-6">
+        <div className="flex flex-col md:flex-row gap-6">
             {/* Smart Filters Column */}
-            <div className="w-1/4 space-y-4">
+            <div className="w-full md:w-1/4 space-y-4">
                 <h3 className="text-lg font-semibold">Smart Filters</h3>
                  <div className="space-y-2">
                     <Label>Therapist</Label>
@@ -201,7 +201,7 @@ export default function SchedulingPage() {
             </div>
 
             {/* Weekly View Column */}
-            <div className="w-3/4">
+            <div className="w-full md:w-3/4">
                 <div className="flex items-center justify-between mb-4">
                      <h3 className="text-lg font-semibold">
                         {format(weekDays[0], 'MMMM d')} - {format(weekDays[4], 'd, yyyy')}
@@ -215,46 +215,48 @@ export default function SchedulingPage() {
                         </Button>
                     </div>
                 </div>
+                
+                <div className="overflow-x-auto">
+                  <div className="grid grid-cols-5 gap-2 rounded-lg border bg-muted/20 p-2 min-w-[700px]">
+                      {/* Day Headers */}
+                      {weekDays.map(day => (
+                          <div key={day.toString()} className="text-center">
+                              <p className="font-semibold text-lg">{format(day, 'E')}</p>
+                              <p className="text-muted-foreground">{format(day, 'd')}</p>
+                          </div>
+                      ))}
 
-                <div className="grid grid-cols-5 gap-2 rounded-lg border bg-muted/20 p-2">
-                    {/* Day Headers */}
-                    {weekDays.map(day => (
-                        <div key={day.toString()} className="text-center">
-                            <p className="font-semibold text-lg">{format(day, 'E')}</p>
-                            <p className="text-muted-foreground">{format(day, 'd')}</p>
-                        </div>
-                    ))}
+                      {/* Schedule Grid */}
+                      <div className="col-span-5 grid grid-cols-[auto,1fr,1fr,1fr,1fr,1fr] gap-x-2">
+                           {/* Time Gutter */}
+                          <div className="space-y-2 text-right">
+                               {timeSlots.map(time => (
+                                  <div key={time} className="h-20 text-xs text-muted-foreground pr-2 pt-1">{time}</div>
+                              ))}
+                          </div>
 
-                    {/* Schedule Grid */}
-                    <div className="col-span-5 grid grid-cols-[auto,1fr,1fr,1fr,1fr,1fr] gap-x-2">
-                         {/* Time Gutter */}
-                        <div className="space-y-2 text-right">
-                             {timeSlots.map(time => (
-                                <div key={time} className="h-20 text-xs text-muted-foreground pr-2">{time}</div>
-                            ))}
-                        </div>
-
-                         {/* Day columns */}
-                        {weekDays.map(day => (
-                            <div key={day.toString()} className="relative col-span-1 space-y-2 border-l">
-                                {timeSlots.map(time => {
-                                    const appointment = getAppointmentForSlot(day, time);
-                                    return (
-                                        <div key={time} className="h-20 border-t pl-1">
-                                            {appointment && (
-                                                <SmartSessionCard appointment={appointment}>
-                                                    <div className={cn("h-full rounded-md p-2 text-white text-sm cursor-pointer", getCardColor(appointment.aiStatus))}>
-                                                        <p className="font-bold">{appointment.patientName}</p>
-                                                        <p className="text-xs">{appointment.therapyType}</p>
-                                                    </div>
-                                                </SmartSessionCard>
-                                            )}
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        ))}
-                    </div>
+                           {/* Day columns */}
+                          {weekDays.map(day => (
+                              <div key={day.toString()} className="relative col-span-1 space-y-2 border-l">
+                                  {timeSlots.map(time => {
+                                      const appointment = getAppointmentForSlot(day, time);
+                                      return (
+                                          <div key={time} className="h-20 border-t pl-1">
+                                              {appointment && (
+                                                  <SmartSessionCard appointment={appointment}>
+                                                      <div className={cn("h-full rounded-md p-2 text-white text-sm cursor-pointer", getCardColor(appointment.aiStatus))}>
+                                                          <p className="font-bold">{appointment.patientName}</p>
+                                                          <p className="text-xs">{appointment.therapyType}</p>
+                                                      </div>
+                                                  </SmartSessionCard>
+                                              )}
+                                          </div>
+                                      )
+                                  })}
+                              </div>
+                          ))}
+                      </div>
+                  </div>
                 </div>
             </div>
         </div>
@@ -270,5 +272,3 @@ export default function SchedulingPage() {
     </>
   );
 }
-
-    
