@@ -34,8 +34,6 @@ export interface Patient {
   condition: string;
   medicalHistory: string;
   therapyGoals: string[];
-  avatarUrl: string;
-  dataAiHint: string;
   sessions: Session[];
 }
 

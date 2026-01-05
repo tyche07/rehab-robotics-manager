@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import type { Patient } from '@/lib/types';
 import { Button } from '../ui/button';
@@ -97,7 +96,6 @@ export function PatientListClient({ patients, userId }: PatientListClientProps) 
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[80px]">Avatar</TableHead>
           <TableHead>Name</TableHead>
           <TableHead>Condition</TableHead>
           <TableHead className="text-right">Age</TableHead>
@@ -106,12 +104,6 @@ export function PatientListClient({ patients, userId }: PatientListClientProps) 
       <TableBody>
         {patients.map((patient) => (
           <TableRow key={patient.id} onClick={() => handleRowClick(patient.id)} className="cursor-pointer">
-            <TableCell>
-              <Avatar>
-                <AvatarImage src={patient.avatarUrl} alt={patient.name} data-ai-hint={patient.dataAiHint} />
-                <AvatarFallback>{patient.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-            </TableCell>
             <TableCell className="font-medium">{patient.name}</TableCell>
             <TableCell>
               <Badge variant="secondary">{patient.condition}</Badge>

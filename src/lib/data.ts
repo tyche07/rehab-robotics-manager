@@ -1,8 +1,7 @@
 import type { Patient } from './types';
 
-export const patients: Patient[] = [
+export const patients: Omit<Patient, 'id'>[] = [
   {
-    id: 'p001',
     name: 'John Doe',
     age: 58,
     condition: 'Post-Stroke Hemiparesis',
@@ -12,8 +11,6 @@ export const patients: Patient[] = [
       'Increase muscle strength in the right arm.',
       'Enhance coordination for activities of daily living (ADLs).',
     ],
-    avatarUrl: 'https://picsum.photos/seed/101/100/100',
-    dataAiHint: 'man portrait',
     sessions: [
       {
         id: 's001',
@@ -44,7 +41,6 @@ export const patients: Patient[] = [
     ],
   },
   {
-    id: 'p002',
     name: 'Jane Smith',
     age: 45,
     condition: 'Rotator Cuff Tear (Post-operative)',
@@ -54,8 +50,6 @@ export const patients: Patient[] = [
       'Strengthen rotator cuff and surrounding musculature.',
       'Return to pain-free overhead activities.',
     ],
-    avatarUrl: 'https://picsum.photos/seed/102/100/100',
-    dataAiHint: 'woman portrait',
     sessions: [
        {
         id: 's003',
@@ -84,7 +78,6 @@ export const patients: Patient[] = [
     ],
   },
    {
-    id: 'p003',
     name: 'Samuel Green',
     age: 67,
     condition: 'Arthritis in Knee',
@@ -94,8 +87,6 @@ export const patients: Patient[] = [
       'Strengthen quadriceps and hamstrings to support the knee.',
       'Improve walking gait and balance.',
     ],
-    avatarUrl: 'https://picsum.photos/seed/103/100/100',
-    dataAiHint: 'man smiling',
     sessions: [
        {
         id: 's005',

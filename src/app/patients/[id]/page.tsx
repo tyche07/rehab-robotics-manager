@@ -4,7 +4,7 @@
 import { useMemo } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { List, Target, LineChart, Activity, Heart } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProgressCharts } from '@/components/patients/progress-charts';
@@ -57,7 +57,6 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
       <Card>
         <CardHeader className="flex flex-col items-start gap-6 sm:flex-row">
            <Avatar className="h-24 w-24 border">
-              <AvatarImage src={patient.avatarUrl} alt={patient.name} data-ai-hint={patient.dataAiHint} />
               <AvatarFallback className="text-3xl">{patient.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
            </Avatar>
            <div className="flex-1">

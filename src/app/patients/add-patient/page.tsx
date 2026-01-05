@@ -40,8 +40,6 @@ const formSchema = z.object({
   therapyGoals: z.string().min(10, {
     message: 'Therapy goals must be at least 10 characters.',
   }),
-   avatarUrl: z.string().url({ message: "Please enter a valid URL." }),
-   dataAiHint: z.string().optional(),
 });
 
 export default function AddPatientPage() {
@@ -59,8 +57,6 @@ export default function AddPatientPage() {
       condition: '',
       medicalHistory: '',
       therapyGoals: '',
-      avatarUrl: 'https://picsum.photos/seed/new/100/100',
-      dataAiHint: 'person portrait'
     },
   });
 
@@ -181,22 +177,6 @@ export default function AddPatientPage() {
                 </FormItem>
               )}
             />
-            <FormField
-                control={form.control}
-                name="avatarUrl"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Avatar URL</FormLabel>
-                    <FormControl>
-                        <Input placeholder="https://picsum.photos/seed/..." {...field} />
-                    </FormControl>
-                    <FormDescription>
-                        You can use a service like picsum.photos for random placeholders.
-                    </FormDescription>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
             <Button type="submit" disabled={isSubmitting || !user}>
               {isSubmitting ? (
                 <>
