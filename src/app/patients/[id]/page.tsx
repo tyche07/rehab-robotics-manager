@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo } from 'react';
@@ -148,7 +149,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
             <CardHeader>
               <CardTitle>Session Log</CardTitle>
               <CardDescription>A detailed history of all therapy sessions.</CardDescription>
-            </Header>
+            </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
@@ -222,3 +223,5 @@ function PatientDetailSkeleton() {
     </div>
   )
 }
+
+    
