@@ -18,7 +18,7 @@ import { useFirestore } from '@/firebase';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import { patients as mockPatients } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, BarChart2 } from 'lucide-react';
+import { Loader2, BarChart2, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { ReportDialog } from './report-dialog';
 
@@ -107,13 +107,14 @@ export function PatientListClient({ patients, userId }: PatientListClientProps) 
             </TableCell>
             <TableCell className="text-right">{patient.age}</TableCell>
             <TableCell className="text-center">
-                <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center justify-center gap-2">
                     <Button variant="ghost" size="sm" onClick={() => router.push(`/patients/${patient.id}`)}>
                         <BarChart2 className="mr-2 h-4 w-4" />
                         View Charts
                     </Button>
                     <ReportDialog patient={patient} asTrigger={
                         <Button variant="ghost" size="sm">
+                            <FileText className="mr-2 h-4 w-4" />
                             View Report
                         </Button>
                     } />
