@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Bot } from 'lucide-react';
 import type { Protocol } from '@/lib/protocols-data';
 import { ProtocolTimeline } from './protocol-timeline';
+import { format } from 'date-fns';
 
 interface ProtocolOverviewProps {
   protocol: Protocol;
@@ -19,7 +20,7 @@ export function ProtocolOverview({ protocol }: ProtocolOverviewProps) {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">{protocol.name}</CardTitle>
-          <CardDescription>Last Updated: {new Date(protocol.lastUpdated).toLocaleDateString()}</CardDescription>
+          <CardDescription>Last Updated: {format(new Date(protocol.lastUpdated), 'P')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
