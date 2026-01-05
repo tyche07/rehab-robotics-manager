@@ -1,0 +1,193 @@
+/**
+ * This ruleset enforces a strict user-ownership model for a Rehab Robotics Manager application.
+ *
+ * Core Philosophy:
+ * All data, including patient profiles, session logs, and reports, is considered private and is
+ * strictly scoped to the authenticated user who created it. There is no concept of public data
+ * or shared access between users.
+ *
+ * Data Structure:
+ * The data is organized hierarchically to enforce ownership at the path level. All application
+ * data for a specific user is nested under the `/users/{userId}` path. This structure naturally
+ * prevents data leakage and simplifies security rules.
+ * - /users/{userId}/patients/{patientId}
+ * - /users/{userId}/patients/{patientId}/sessions/{sessionId}
+ * - /users/{userId}/patients/{patientId}/sessions/{sessionId}/reports/{reportId}
+ *
+ * Key Security Decisions:
+ * - Strict Ownership: A user can only access documents within their own data tree (i.e., where
+ *   the `userId` in the path matches their authenticated UID).
+ * - No User Listing: It is not possible to list documents in the root `/users` collection,
+ *   preventing enumeration of all application users.
+ * - Relational Integrity: Rules enforce that denormalized IDs within documents (e.g., `patientId`
+ *   on a SessionLog) must match the corresponding IDs in the document's path. These IDs are
+ *   immutable after creation.
+ * - Default Deny: Any path or operation not explicitly allowed is denied by default.
+ *
+ * Denormalization for Authorization:
+ * The data model denormalizes `patientId` and `sessionId` onto child documents (SessionLogs and
+ * Reports). This avoids slow and costly `get()` calls in security rules, allowing for fast and
+*  efficient authorization checks based on path and document data.
+ *
+ * Structural Segregation:
+ * The entire data model is segregated by user ID at the highest level. This is the most secure
+ * and performant way to manage private, user-specific data.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user is the owner of the document
+     * based on the `userId` wildcard from the path.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * For update/delete operations, checks ownership and ensures the document exists.
+     * This prevents unauthorized modifications and protects against writes to non-existent paths.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // --- Data Integrity Validation Helpers ---
+
+    /**
+     * On create, validates that a PatientProfile's internal ID matches the document ID in the path.
+     */
+    function hasValidPatientDataOnCreate(patientId) {
+      return request.resource.data.id == patientId;
+    }
+
+    /**
+     * On update, ensures the PatientProfile's internal ID is immutable.
+     */
+    function isPatientDataImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * On create, validates relational integrity for a new SessionLog.
+     * Ensures internal IDs match the document IDs from the path.
+     */
+    function hasValidSessionDataOnCreate(patientId, sessionId) {
+      let data = request.resource.data;
+      return data.id == sessionId && data.patientId == patientId;
+    }
+
+    /**
+     * On update, ensures a SessionLog's relational IDs are immutable.
+     */
+    function isSessionDataImmutable() {
+      let incomingData = request.resource.data;
+      let existingData = resource.data;
+      return incomingData.id == existingData.id && incomingData.patientId == existingData.patientId;
+    }
+
+    /**
+     * On create, validates relational integrity for a new Report.
+     * Ensures internal IDs match the document IDs from the path.
+     */
+    function hasValidReportDataOnCreate(patientId, sessionId, reportId) {
+      let data = request.resource.data;
+      return data.id == reportId && data.patientId == patientId && data.sessionId == sessionId;
+    }
+
+    /**
+     * On update, ensures a Report's relational IDs are immutable.
+     */
+    function isReportDataImmutable() {
+      let incomingData = request.resource.data;
+      let existingData = resource.data;
+      return incomingData.id == existingData.id &&
+             incomingData.patientId == existingData.patientId &&
+             incomingData.sessionId == existingData.sessionId;
+    }
+
+    // ------------------------------------------------------------------------
+    // User Scope & Patient Profiles
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Rules for a user's own document, often used for user profile information.
+     * @path /users/{userId}
+     * @allow A user (auth.uid='user123') creating their own document at `/users/user123`. (create)
+     * @deny Another user (auth.uid='user456') trying to read the document at `/users/user123`. (get)
+     * @principle Enforces self-creation and ownership of a user's root document.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow list: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Manages patient profiles, which are owned by and private to a specific user.
+     * @path /users/{userId}/patients/{patientId}
+     * @allow The owner (auth.uid='user123') reading a list of their patients at `/users/user123/patients`. (list)
+     * @deny Any other user trying to delete a patient at `/users/user123/patients/patientABC`. (delete)
+     * @principle Restricts all access to the user's own data tree (path-based ownership).
+     */
+    match /users/{userId}/patients/{patientId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidPatientDataOnCreate(patientId);
+      allow update: if isExistingOwner(userId) && isPatientDataImmutable();
+      allow delete: if isExistingOwner(userId);
+
+      // ----------------------------------------------------------------------
+      // Session Logs
+      // ----------------------------------------------------------------------
+
+      /**
+       * @description Secures session logs for a specific patient, owned by the user.
+       * @path /users/{userId}/patients/{patientId}/sessions/{sessionId}
+       * @allow The owner (auth.uid='user123') creating a new session log at `/users/user123/patients/patientABC/sessions/sessionXYZ`. (create)
+       * @deny The owner (auth.uid='user123') creating a session log where the internal `patientId` does not match `patientABC`. (create)
+       * @principle Enforces path-based ownership and validates relational integrity on create/update.
+       */
+      match /sessions/{sessionId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidSessionDataOnCreate(patientId, sessionId);
+        allow update: if isExistingOwner(userId) && isSessionDataImmutable();
+        allow delete: if isExistingOwner(userId);
+
+        // --------------------------------------------------------------------
+        // Reports
+        // --------------------------------------------------------------------
+
+        /**
+         * @description Secures reports for a specific session, owned by the user.
+         * @path /users/{userId}/patients/{patientId}/sessions/{sessionId}/reports/{reportId}
+         * @allow The owner (auth.uid='user123') reading a report at `/users/user123/patients/patientABC/sessions/sessionXYZ/reports/report1`. (get)
+         * @deny An anonymous user trying to list reports for a session. (list)
+         * @principle Enforces strict path-based ownership down to the deepest level of the data hierarchy.
+         */
+        match /reports/{reportId} {
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
+          allow create: if isOwner(userId) && hasValidReportDataOnCreate(patientId, sessionId, reportId);
+          allow update: if isExistingOwner(userId) && isReportDataImmutable();
+          allow delete: if isExistingOwner(userId);
+        }
+      }
+    }
+  }
+}

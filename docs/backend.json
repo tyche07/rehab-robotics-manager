@@ -1,0 +1,216 @@
+{
+  "entities": {
+    "PatientProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PatientProfile",
+      "type": "object",
+      "description": "Represents a patient's profile, including medical history and diagnosis information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PatientProfile entity."
+        },
+        "medicalHistory": {
+          "type": "string",
+          "description": "Detailed medical history of the patient."
+        },
+        "diagnosis": {
+          "type": "string",
+          "description": "Patient's diagnosis information."
+        },
+        "therapyGoals": {
+          "type": "string",
+          "description": "Specific therapy goals set for the patient."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the patient."
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "The date of birth of the patient.",
+          "format": "date-time"
+        },
+        "contactInformation": {
+          "type": "string",
+          "description": "The contact information of the patient."
+        }
+      },
+      "required": [
+        "id",
+        "medicalHistory",
+        "diagnosis",
+        "therapyGoals",
+        "name",
+        "dateOfBirth",
+        "contactInformation"
+      ]
+    },
+    "SessionLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SessionLog",
+      "type": "object",
+      "description": "Represents a log of a therapy session, including time-series sensor data.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SessionLog entity."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to PatientProfile. (Relationship: PatientProfile 1:N SessionLog)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Timestamp indicating the start of the session.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Timestamp indicating the end of the session.",
+          "format": "date-time"
+        },
+        "sensorData": {
+          "type": "string",
+          "description": "Time-series data captured from sensors during the session. Stored as JSON stringified format."
+        },
+        "robotParameters": {
+          "type": "string",
+          "description": "Parameters used for the robot during the session. Stored as JSON stringified format."
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "startTime",
+        "endTime",
+        "sensorData",
+        "robotParameters"
+      ]
+    },
+    "Report": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Report",
+      "type": "object",
+      "description": "Represents a detailed report generated for a therapy session.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Report entity."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to PatientProfile. (Relationship: PatientProfile 1:N Report)"
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "Reference to SessionLog. (Relationship: SessionLog 1:N Report)"
+        },
+        "generationTime": {
+          "type": "string",
+          "description": "Timestamp indicating when the report was generated.",
+          "format": "date-time"
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the report, potentially in a structured format like JSON or a textual format."
+        },
+        "analyticsData": {
+          "type": "string",
+          "description": "Serialized data containing analytics about the report"
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "sessionId",
+        "generationTime",
+        "content",
+        "analyticsData"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/patients/{patientId}",
+        "definition": {
+          "entityName": "PatientProfile",
+          "schema": {
+            "$ref": "#/backend/entities/PatientProfile"
+          },
+          "description": "Stores patient profiles. Patient profiles are nested under user IDs to ensure path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the patient profile."
+            },
+            {
+              "name": "patientId",
+              "description": "The unique ID of the patient profile."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/patients/{patientId}/sessions/{sessionId}",
+        "definition": {
+          "entityName": "SessionLog",
+          "schema": {
+            "$ref": "#/backend/entities/SessionLog"
+          },
+          "description": "Stores session logs for each patient. The 'patientId' field within SessionLog is a denormalized copy of the patient's ID to achieve Authorization Independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the patient profile."
+            },
+            {
+              "name": "patientId",
+              "description": "The ID of the patient to which the session log belongs."
+            },
+            {
+              "name": "sessionId",
+              "description": "The unique ID of the session log."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/patients/{patientId}/sessions/{sessionId}/reports/{reportId}",
+        "definition": {
+          "entityName": "Report",
+          "schema": {
+            "$ref": "#/backend/entities/Report"
+          },
+          "description": "Stores reports generated for therapy sessions. Includes denormalized 'patientId' and 'sessionId' fields for simplified querying and to ensure Authorization Independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the patient profile."
+            },
+            {
+              "name": "patientId",
+              "description": "The ID of the patient to which the report belongs."
+            },
+            {
+              "name": "sessionId",
+              "description": "The ID of the session to which the report belongs."
+            },
+            {
+              "name": "reportId",
+              "description": "The unique ID of the report."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the Rehab Robotics Manager application, focusing on patient profiles, session logs, and reports. The structure adheres to the core design principles, especially Authorization Independence, by using path-based ownership for private user data and denormalizing patient IDs where necessary. \n\n**Authorization Independence and QAPs:**\n\n*   Patient profiles and associated session logs and reports are stored under the `/users/{userId}` path. This ensures that each user can only access their own data without needing to check other collections. The `patientId` field within SessionLog and Report documents are denormalized copies of the patient's ID, allowing for efficient querying within a user's scope without needing to perform `get()` operations in security rules.\n*   This design naturally supports QAPs because listing operations can be scoped to a specific user's data using the hierarchical path. No filtering is required in the rules themselves, as the path inherently defines the accessible data.\n\n**Structure Overview:**\n\n*   `/users/{userId}/patients/{patientId}`: Patient profiles are stored under each user's ID, allowing each user to manage their patients' profiles. This structure ensures clear ownership and simplifies security rules by leveraging path-based authorization.\n*   `/users/{userId}/patients/{patientId}/sessions/{sessionId}`: Session logs are stored as subcollections of patient profiles, creating a clear hierarchy and representing the 1:N relationship between patients and sessions. This maintains the logical connection and simplifies data retrieval.\n*   `/users/{userId}/patients/{patientId}/sessions/{sessionId}/reports/{reportId}`: Reports are stored as subcollections of session logs, continuing the hierarchical structure and maintaining the relationship between sessions and reports.\n\nThis design provides a scalable, secure, and easily debuggable structure for the Rehab Robotics Manager application."
+  }
+}
