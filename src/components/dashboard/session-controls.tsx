@@ -34,10 +34,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface SessionControlsProps {
   patient: Patient;
+  sessionData: SessionDataPoint[];
   onDataPoint: (data: SessionDataPoint[]) => void;
 }
 
-export function SessionControls({ patient, onDataPoint }: SessionControlsProps) {
+export function SessionControls({ patient, sessionData, onDataPoint }: SessionControlsProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
@@ -49,8 +50,7 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
   const [rangeOfMotion, setRangeOfMotion] = useState(45);
   const [robotResistance, setRobotResistance] = useState([15]);
   const [therapistNotes, setTherapistNotes] = useState('');
-  const [sessionData, setSessionData] = useState<SessionDataPoint[]>([]);
-
+  
   const sessionStartTime = useRef<Date | null>(null);
 
   const [controlMode, setControlMode] = useState('impedance');
@@ -62,19 +62,15 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
   const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   
   const addDataPoint = useCallback(() => {
-    setSessionData(currentData => {
-       const newDataPoint: SessionDataPoint = {
-        time: currentData.length * 2,
-        heartRate: Math.round(heartRate),
-        muscleLoad: Math.round(muscleLoad),
-        rangeOfMotion: rangeOfMotion,
-        robotResistance: robotResistance[0],
-      };
-      const updatedData = [...currentData, newDataPoint].slice(-30);
-      onDataPoint(updatedData);
-      return updatedData;
-    });
-  }, [heartRate, muscleLoad, onDataPoint, rangeOfMotion, robotResistance]);
+    const newDataPoint: SessionDataPoint = {
+      time: sessionData.length * 2,
+      heartRate: Math.round(heartRate),
+      muscleLoad: Math.round(muscleLoad),
+      rangeOfMotion: rangeOfMotion,
+      robotResistance: robotResistance[0],
+    };
+    onDataPoint([...sessionData, newDataPoint].slice(-30));
+  }, [heartRate, muscleLoad, onDataPoint, rangeOfMotion, robotResistance, sessionData]);
 
 
   useEffect(() => {
@@ -155,8 +151,7 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
     if (isSessionActive) {
       // Ending the session
       setIsSessionActive(false);
-      onDataPoint([]); 
-
+      
       if (sessionData.length > 0 && firestore && user?.uid && sessionStartTime.current) {
         const sessionEndTime = new Date();
         const durationInMinutes = Math.round((sessionEndTime.getTime() - sessionStartTime.current.getTime()) / 60000);
@@ -170,7 +165,8 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
             time: dp.time,
             rangeOfMotion: dp.rangeOfMotion,
             robotResistance: dp.robotResistance,
-            muscleLoad: dp.muscleLoad
+            muscleLoad: dp.muscleLoad,
+            heartRate: dp.heartRate, // Ensure heart rate is included if part of your session data model
           }))
         };
         
@@ -184,6 +180,7 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
             description: `Session data for ${patient.name} has been saved successfully.`,
           });
           setTherapistNotes(''); // Clear notes after saving
+          onDataPoint([]); // Clear the live chart
         } catch (error) {
           console.error("Error saving session:", error);
           toast({
@@ -192,10 +189,11 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
             description: "There was an error saving the session data to the database.",
           });
         }
+      } else {
+         onDataPoint([]); // Clear live chart even if not saving
       }
     } else {
       // Starting a new session
-      setSessionData([]); 
       onDataPoint([]);
       sessionStartTime.current = new Date();
       setIsSessionActive(true);

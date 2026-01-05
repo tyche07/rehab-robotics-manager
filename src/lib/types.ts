@@ -24,6 +24,7 @@ export interface Session {
     rangeOfMotion: number;
     robotResistance: number;
     muscleLoad: number;
+    heartRate: number;
   }[];
 }
 
@@ -55,6 +56,7 @@ const SessionDataSchema = z.object({
   rangeOfMotion: z.number(),
   robotResistance: z.number(),
   muscleLoad: z.number(),
+  heartRate: z.number(),
 });
 
 const SessionInfoSchema = z.object({

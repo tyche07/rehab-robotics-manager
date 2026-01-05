@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Patient } from '@/lib/types';
+import type { Patient, SessionDataPoint } from '@/lib/types';
 import { LiveDataCharts } from '@/components/dashboard/live-data-charts';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
   const [selectedPatientId, setSelectedPatientId] = React.useState<string | null>(null);
-  const [sessionData, setSessionData] = React.useState<any[]>([]);
+  const [sessionData, setSessionData] = React.useState<SessionDataPoint[]>([]);
 
   const firestore = useFirestore();
   const { user, isUserLoading: isAuthLoading } = useUser();
@@ -70,9 +70,12 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           {selectedPatient ? (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+             <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
                <div className="lg:col-span-3">
-                 <SessionControls patient={selectedPatient} onDataPoint={setSessionData} />
+                 <SessionControls 
+                    patient={selectedPatient} 
+                    sessionData={sessionData}
+                    onDataPoint={setSessionData} />
                </div>
                <div className="lg:col-span-2">
                   <LiveDataCharts data={sessionData} />
