@@ -5,7 +5,6 @@
 import { useMemo } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { List, Target, LineChart, Activity, Heart } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProgressCharts } from '@/components/patients/progress-charts';
@@ -19,7 +18,6 @@ import type { Patient } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Move3d } from '@/components/ui/move-3d';
 import { Button } from '@/components/ui/button';
-import { Sparkles } from 'lucide-react';
 
 export default function PatientDetailPage() {
   const firestore = useFirestore();
