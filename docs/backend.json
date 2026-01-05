@@ -165,7 +165,7 @@
           "schema": {
             "$ref": "#/backend/entities/SessionLog"
           },
-          "description": "Stores session logs for each patient. The 'patientId' field within SessionLog is a denormalized copy of the patient's ID to achieve Authorization Independence.",
+          "description": "Stores session logs for each patient. The 'patientId' field within SessionLog is a denormalized copy of the patient's ID.",
           "params": [
             {
               "name": "userId",
@@ -189,7 +189,7 @@
           "schema": {
             "$ref": "#/backend/entities/Report"
           },
-          "description": "Stores reports generated for therapy sessions. Includes denormalized 'patientId' and 'sessionId' fields for simplified querying and to ensure Authorization Independence.",
+          "description": "Stores reports generated for therapy sessions. Includes denormalized 'patientId' and 'sessionId' fields for simplified querying.",
           "params": [
             {
               "name": "userId",
@@ -210,7 +210,6 @@
           ]
         }
       }
-    ],
-    "reasoning": "The Firestore data structure is designed to support the Rehab Robotics Manager application, focusing on patient profiles, session logs, and reports. The structure adheres to the core design principles, especially Authorization Independence, by using path-based ownership for private user data and denormalizing patient IDs where necessary. \n\n**Authorization Independence and QAPs:**\n\n*   Patient profiles and associated session logs and reports are stored under the `/users/{userId}` path. This ensures that each user can only access their own data without needing to check other collections. The `patientId` field within SessionLog and Report documents are denormalized copies of the patient's ID, allowing for efficient querying within a user's scope without needing to perform `get()` operations in security rules.\n*   This design naturally supports QAPs because listing operations can be scoped to a specific user's data using the hierarchical path. No filtering is required in the rules themselves, as the path inherently defines the accessible data.\n\n**Structure Overview:**\n\n*   `/users/{userId}/patients/{patientId}`: Patient profiles are stored under each user's ID, allowing each user to manage their patients' profiles. This structure ensures clear ownership and simplifies security rules by leveraging path-based authorization.\n*   `/users/{userId}/patients/{patientId}/sessions/{sessionId}`: Session logs are stored as subcollections of patient profiles, creating a clear hierarchy and representing the 1:N relationship between patients and sessions. This maintains the logical connection and simplifies data retrieval.\n*   `/users/{userId}/patients/{patientId}/sessions/{sessionId}/reports/{reportId}`: Reports are stored as subcollections of session logs, continuing the hierarchical structure and maintaining the relationship between sessions and reports.\n\nThis design provides a scalable, secure, and easily debuggable structure for the Rehab Robotics Manager application."
+    ]
   }
 }

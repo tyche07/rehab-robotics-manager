@@ -3,15 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // For this demo, we will allow reads and writes to all documents
-    // for any authenticated user. In a real application, you should
-    // implement more granular security rules.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-
-    // A more secure ruleset for a multi-tenant application would be:
-    /*
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
@@ -20,16 +12,10 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    match /users/{userId}/{document=**} {
+    // Users can only read and write to their own data, stored in a subcollection
+    // under their user ID.
+    match /users/{userId}/{documents=**} {
       allow read, write: if isOwner(userId);
     }
-    
-    // Public data that all authenticated users can read
-    match /patients/{patientId} {
-      allow get, list: if isSignedIn();
-      // Allow only owners to write
-      allow write: if isOwner(resource.data.ownerId); 
-    }
-    */
   }
 }

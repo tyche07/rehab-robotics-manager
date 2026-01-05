@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -46,6 +46,7 @@ const formSchema = z.object({
 
 export default function AddPatientPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,22 +65,29 @@ export default function AddPatientPage() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore) return;
+    if (!firestore || !user?.uid) {
+        toast({
+            variant: 'destructive',
+            title: 'Authentication Error',
+            description: 'You must be signed in to add a patient.',
+        });
+        return;
+    }
     setIsSubmitting(true);
 
     try {
       const newPatient: NewPatient = {
         ...values,
-        // The form gives us a single string, we need to split it into an array
         therapyGoals: values.therapyGoals.split('\n').filter(goal => goal.trim() !== ''),
-        sessions: [], // New patients have no sessions
+        sessions: [],
       };
 
-      const docRef = await addDoc(collection(firestore, 'patients'), newPatient);
+      const patientsCollection = collection(firestore, 'users', user.uid, 'patients');
+      const docRef = await addDoc(patientsCollection, newPatient);
 
       toast({
         title: 'Patient Added',
-        description: `${values.name} has been added to the patient list.`,
+        description: `${values.name} has been added to your patient list.`,
       });
 
       router.push(`/patients/${docRef.id}`);
@@ -189,7 +197,7 @@ export default function AddPatientPage() {
                     </FormItem>
                 )}
                 />
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !user}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...

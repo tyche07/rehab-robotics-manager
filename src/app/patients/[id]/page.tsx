@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { List, Target, LineChart, Activity, Heart, Move3d } from 'lucide-react';
@@ -11,17 +11,20 @@ import { ReportDialog } from '@/components/patients/report-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Patient } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PatientDetailPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
+  const { user } = useUser();
+  const { id: patientId } = params;
+
   const patientRef = useMemoFirebase(() => {
-    if (!firestore || !params.id) return null;
-    return doc(firestore, 'patients', params.id);
-  }, [firestore, params.id]);
+    if (!firestore || !user?.uid || !patientId) return null;
+    return doc(firestore, 'users', user.uid, 'patients', patientId);
+  }, [firestore, user, patientId]);
 
   const { data: patient, isLoading } = useDoc<Patient>(patientRef);
 
@@ -145,7 +148,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
             <CardHeader>
               <CardTitle>Session Log</CardTitle>
               <CardDescription>A detailed history of all therapy sessions.</CardDescription>
-            </CardHeader>
+            </Header>
             <CardContent>
               <Table>
                 <TableHeader>

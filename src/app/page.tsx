@@ -23,12 +23,10 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const { user, isUserLoading: isAuthLoading } = useUser();
 
-  // In a real app, you'd scope this to the logged-in user.
-  // For this demo, we'll fetch all patients.
-  // The query will only run once we have a user and a firestore instance.
   const patientsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'patients'));
+    if (!firestore || !user?.uid) return null;
+    // Query the 'patients' subcollection under the current user's document
+    return query(collection(firestore, 'users', user.uid, 'patients'));
   }, [firestore, user]);
 
   const { data: patients, isLoading: isLoadingPatients } = useCollection<Patient>(patientsQuery);
@@ -55,9 +53,9 @@ export default function DashboardPage() {
             {isLoading ? (
                <Skeleton className="h-10 w-full" />
             ) : (
-              <Select onValueChange={setSelectedPatientId} value={selectedPatientId ?? ''}>
+              <Select onValueChange={setSelectedPatientId} value={selectedPatientId ?? ''} disabled={!patients || patients.length === 0}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a patient..." />
+                  <SelectValue placeholder={!patients || patients.length === 0 ? "Please add a patient" : "Select a patient..."} />
                 </SelectTrigger>
                 <SelectContent>
                   {patients?.map((patient: Patient) => (
@@ -82,7 +80,9 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="flex h-64 items-center justify-center text-muted-foreground">
-              {isLoading ? <p>Authenticating and loading patients...</p> : <p>Please select a patient to start a session.</p>}
+              {isLoading ? <p>Authenticating and loading patients...</p> :  
+              (!patients || patients.length === 0) ? <p>No patients found. Please add a patient on the Patients page.</p> :
+              <p>Please select a patient to start a session.</p>}
             </div>
           )}
         </CardContent>

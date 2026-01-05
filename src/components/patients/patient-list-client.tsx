@@ -15,7 +15,7 @@ import type { Patient } from '@/lib/types';
 import { Button } from '../ui/button';
 import { useState } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, writeBatch } from 'firebase/firestore';
+import { collection, writeBatch, doc } from 'firebase/firestore';
 import { patients as mockPatients } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -23,9 +23,10 @@ import Link from 'next/link';
 
 interface PatientListClientProps {
   patients: Patient[];
+  userId?: string;
 }
 
-export function PatientListClient({ patients }: PatientListClientProps) {
+export function PatientListClient({ patients, userId }: PatientListClientProps) {
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -36,15 +37,22 @@ export function PatientListClient({ patients }: PatientListClientProps) {
   };
 
   const handleSeedData = async () => {
-    if (!firestore) return;
+    if (!firestore || !userId) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "You must be signed in to seed data.",
+        });
+        return;
+    }
     setIsSeeding(true);
     try {
       const batch = writeBatch(firestore);
-      const patientsCollection = collection(firestore, 'patients');
+      const userPatientsCollection = collection(firestore, 'users', userId, 'patients');
       
       mockPatients.forEach(patient => {
-        // We let Firestore generate the document ID by not specifying it
-        const docRef = collection(patientsCollection).doc();
+        // Create a new doc reference in the subcollection
+        const docRef = doc(userPatientsCollection);
         batch.set(docRef, patient);
       });
 
@@ -52,7 +60,7 @@ export function PatientListClient({ patients }: PatientListClientProps) {
 
       toast({
         title: "Data Seeded Successfully",
-        description: "The initial patient data has been loaded into Firestore.",
+        description: "The initial patient data has been loaded for your user.",
       });
       // The useCollection hook will automatically update the UI
     } catch (error) {
@@ -71,8 +79,8 @@ export function PatientListClient({ patients }: PatientListClientProps) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
         <h3 className="text-xl font-semibold">No Patient Data Found</h3>
-        <p className="text-muted-foreground">Your Firestore database appears to be empty.</p>
-        <Button onClick={handleSeedData} disabled={isSeeding}>
+        <p className="text-muted-foreground">Your patient list is empty.</p>
+        <Button onClick={handleSeedData} disabled={isSeeding || !userId}>
           {isSeeding ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Seeding...</> : 'Seed Initial Data'}
         </Button>
       </div>
