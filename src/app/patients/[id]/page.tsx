@@ -45,7 +45,7 @@ export default function PatientDetailPage() {
     return { latestSession: latest, maxRom, peakResistance, peakMuscleLoad };
   }, [patient]);
   
-  const isLoading = isAuthLoading || isPatientLoading;
+  const isLoading = isAuthLoading || (patientRef && isPatientLoading);
 
   if (isLoading) {
     return <PatientDetailSkeleton />;
@@ -254,7 +254,5 @@ function PatientDetailSkeleton() {
     </div>
   )
 }
-
-    
 
     
