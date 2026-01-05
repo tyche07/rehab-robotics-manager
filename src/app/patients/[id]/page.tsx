@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useMemo } from 'react';
@@ -21,7 +20,7 @@ import { Button } from '@/components/ui/button';
 
 export default function PatientDetailPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading: isAuthLoading } = useUser();
   const params = useParams();
   const patientId = params.id as string;
 
@@ -30,7 +29,7 @@ export default function PatientDetailPage() {
     return doc(firestore, 'users', user.uid, 'patients', patientId);
   }, [firestore, user, patientId]);
 
-  const { data: patient, isLoading } = useDoc<Patient>(patientRef);
+  const { data: patient, isLoading: isPatientLoading } = useDoc<Patient>(patientRef);
 
   const { latestSession, maxRom, peakResistance, peakMuscleLoad } = useMemo(() => {
     if (!patient || !patient.sessions || patient.sessions.length === 0) {
@@ -46,6 +45,8 @@ export default function PatientDetailPage() {
     return { latestSession: latest, maxRom, peakResistance, peakMuscleLoad };
   }, [patient]);
   
+  const isLoading = isAuthLoading || isPatientLoading;
+
   if (isLoading) {
     return <PatientDetailSkeleton />;
   }
@@ -204,6 +205,42 @@ function PatientDetailSkeleton() {
             <div className="space-y-2">
               <Skeleton className="h-6 w-32" />
               <Skeleton className="h-16 w-full" />
+            </div>
+          </div>
+          <Separator className="my-6" />
+          <div>
+            <Skeleton className="mb-4 h-6 w-48" />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Max Range of Motion</CardTitle>
+                    <Move3d className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-7 w-16" />
+                    <Skeleton className="mt-1 h-4 w-24" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Peak Resistance</CardTitle>
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-7 w-16" />
+                    <Skeleton className="mt-1 h-4 w-24" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Peak Muscle Load</CardTitle>
+                    <Heart className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-7 w-16" />
+                    <Skeleton className="mt-1 h-4 w-24" />
+                </CardContent>
+              </Card>
             </div>
           </div>
         </CardContent>

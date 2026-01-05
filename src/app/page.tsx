@@ -82,8 +82,13 @@ export default function DashboardPage() {
                </div>
             </div>
           ) : (
-            <div className="flex h-64 items-center justify-center text-muted-foreground">
-              {isLoading ? <p>Authenticating and loading patients...</p> :  
+            <div className="flex h-64 flex-col items-center justify-center gap-4 text-muted-foreground">
+              {isLoading ? (
+                <>
+                  <Skeleton className="h-8 w-48" />
+                  <Skeleton className="h-5 w-64" />
+                </>
+              ):  
               (!patients || patients.length === 0) ? <p>No patients found. Please add a patient on the Patients page.</p> :
               <p>Please select a patient to start a session.</p>}
             </div>
