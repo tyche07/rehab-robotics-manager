@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -32,8 +33,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <SidebarProvider>
-      <Sidebar>
+    <SidebarProvider defaultOpen={false}>
+      <Sidebar collapsible="icon">
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
@@ -62,7 +63,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-          <SidebarTrigger className="md:hidden" />
+          <SidebarTrigger />
           <div className="flex flex-1 items-center justify-end gap-4">
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
