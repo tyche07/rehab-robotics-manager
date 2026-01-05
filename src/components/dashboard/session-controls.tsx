@@ -1,14 +1,14 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Heart, Activity, Move3d, Bot, ShieldCheck, Zap, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { BiometricCard } from './biometric-card';
 import { Textarea } from '@/components/ui/textarea';
-import type { Patient, SessionDataPoint } from '@/lib/types';
+import type { Patient, SessionDataPoint, Session } from '@/lib/types';
 import { AiRecommendationDialog } from './ai-recommendation-dialog';
 import { adjustTherapyParameters } from '@/ai/flows/real-time-therapy-adjustment';
 import type { TherapyParametersOutput } from '@/ai/flows/real-time-therapy-adjustment';
@@ -27,6 +27,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useFirestore, useUser } from '@/firebase';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
+
 
 interface SessionControlsProps {
   patient: Patient;
@@ -35,6 +39,9 @@ interface SessionControlsProps {
 
 export function SessionControls({ patient, onDataPoint }: SessionControlsProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useUser();
+
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionStage, setSessionStage] = useState('warm-up');
   const [heartRate, setHeartRate] = useState(75);
@@ -44,6 +51,8 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
   const [therapistNotes, setTherapistNotes] = useState('');
   const [sessionData, setSessionData] = useState<SessionDataPoint[]>([]);
 
+  const sessionStartTime = useRef<Date | null>(null);
+
   const [controlMode, setControlMode] = useState('impedance');
   const [safetyStatus, setSafetyStatus] = useState('normal'); // normal, warning, error
 
@@ -52,22 +61,24 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
   const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   
   const addDataPoint = useCallback(() => {
-    const newDataPoint: SessionDataPoint = {
-      time: sessionData.length * 2,
-      heartRate: Math.round(heartRate),
-      muscleLoad: Math.round(muscleLoad),
-      rangeOfMotion: rangeOfMotion,
-      robotResistance: robotResistance[0],
-    };
-    const updatedData = [...sessionData, newDataPoint].slice(-30); // Keep last 30 data points
-    setSessionData(updatedData);
-    onDataPoint(updatedData);
-  }, [heartRate, muscleLoad, onDataPoint, rangeOfMotion, robotResistance, sessionData]);
+    setSessionData(currentData => {
+       const newDataPoint: SessionDataPoint = {
+        time: currentData.length * 2,
+        heartRate: Math.round(heartRate),
+        muscleLoad: Math.round(muscleLoad),
+        rangeOfMotion: rangeOfMotion,
+        robotResistance: robotResistance[0],
+      };
+      const updatedData = [...currentData, newDataPoint].slice(-30);
+      onDataPoint(updatedData);
+      return updatedData;
+    });
+  }, [heartRate, muscleLoad, onDataPoint, rangeOfMotion, robotResistance]);
 
 
   useEffect(() => {
-    let dataInterval: NodeJS.Timeout;
-    let biometricInterval: NodeJS.Timeout;
+    let dataInterval: NodeJS.Timeout | null = null;
+    let biometricInterval: NodeJS.Timeout | null = null;
 
     if (isSessionActive) {
       dataInterval = setInterval(() => {
@@ -87,8 +98,8 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
     }
 
     return () => {
-        clearInterval(dataInterval);
-        clearInterval(biometricInterval);
+        if (dataInterval) clearInterval(dataInterval);
+        if (biometricInterval) clearInterval(biometricInterval);
     };
   }, [isSessionActive, addDataPoint]);
   
@@ -139,16 +150,65 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
     });
   }
 
-  const handleSessionToggle = () => {
+  const handleSessionToggle = async () => {
     if (isSessionActive) {
+      // Ending the session
       setIsSessionActive(false);
-      onDataPoint([]); // Clear data on stop
+      onDataPoint([]); 
+
+      if (sessionData.length > 0 && firestore && user?.uid && sessionStartTime.current) {
+        const sessionEndTime = new Date();
+        const durationInMinutes = Math.round((sessionEndTime.getTime() - sessionStartTime.current.getTime()) / 60000);
+
+        const newSession: Session = {
+          id: uuidv4(),
+          date: new Date().toISOString(),
+          duration: durationInMinutes,
+          notes: therapistNotes,
+          data: sessionData.map(dp => ({
+            time: dp.time,
+            rangeOfMotion: dp.rangeOfMotion,
+            robotResistance: dp.robotResistance,
+            muscleLoad: dp.muscleLoad
+          }))
+        };
+        
+        try {
+          const patientDocRef = doc(firestore, 'users', user.uid, 'patients', patient.id);
+          await updateDoc(patientDocRef, {
+            sessions: arrayUnion(newSession)
+          });
+          toast({
+            title: "Session Saved",
+            description: `Session data for ${patient.name} has been saved successfully.`,
+          });
+          setTherapistNotes(''); // Clear notes after saving
+        } catch (error) {
+          console.error("Error saving session:", error);
+          toast({
+            variant: "destructive",
+            title: "Failed to Save Session",
+            description: "There was an error saving the session data to the database.",
+          });
+        }
+      }
     } else {
-      setSessionData([]); // Reset data on start
+      // Starting a new session
+      setSessionData([]); 
+      onDataPoint([]);
+      sessionStartTime.current = new Date();
       setIsSessionActive(true);
     }
   }
 
+  // Dynamically import v4 from uuid
+  useEffect(() => {
+    import('uuid').then(module => {
+      // You can now use module.v4 if needed elsewhere, but this ensures it's loaded.
+    }).catch(error => {
+      console.error("Failed to load uuid module", error);
+    });
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -192,7 +252,7 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
               </div>
               <div className="flex items-end gap-2">
                   <Button onClick={handleSessionToggle} className="w-full" variant={isSessionActive ? 'secondary' : 'default'}>
-                    {isSessionActive ? 'End Session' : 'Start Session'}
+                    {isSessionActive ? 'End & Save Session' : 'Start Session'}
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -299,5 +359,3 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
     </div>
   );
 }
-
-    
