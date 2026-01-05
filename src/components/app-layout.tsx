@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Bot, LayoutDashboard, Users, HeartPulse } from 'lucide-react';
+import { Bot, LayoutDashboard, Users, HeartPulse, Calendar, Shield, ClipboardList, BookText } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/patients', label: 'Patients', icon: Users },
+    { href: '/scheduling', label: 'Scheduling', icon: Calendar },
+    { href: '/protocols', label: 'Protocols', icon: BookText },
+    { href: '/user-management', label: 'User Management', icon: Shield },
+    { href: '/compliance', label: 'Compliance', icon: ClipboardList },
   ];
 
   return (
