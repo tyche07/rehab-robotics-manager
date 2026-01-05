@@ -1,9 +1,11 @@
+
 "use client";
 
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Session } from '@/lib/types';
 import { format } from 'date-fns';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 
 interface ProgressChartsProps {
   sessions: Session[];
@@ -25,8 +27,8 @@ export function ProgressCharts({ sessions }: ProgressChartsProps) {
   .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   .map(session => ({
     date: format(new Date(session.date), 'MMM d'),
-    rangeOfMotion: Math.max(...session.data.map(d => d.rangeOfMotion)),
-    robotResistance: Math.max(...session.data.map(d => d.robotResistance)),
+    rangeOfMotion: Math.max(0, ...session.data.map(d => d.rangeOfMotion)),
+    robotResistance: Math.max(0, ...session.data.map(d => d.robotResistance)),
   }));
 
   if (sessions.length === 0) {
@@ -34,31 +36,39 @@ export function ProgressCharts({ sessions }: ProgressChartsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <div>
-        <h3 className="mb-4 text-lg font-semibold">Max Range of Motion per Session</h3>
-        <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <BarChart accessibilityLayer data={chartData}>
-            <CartesianGrid vertical={false} />
-            <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
-            <YAxis unit="°" />
-            <Tooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="rangeOfMotion" fill="var(--color-rangeOfMotion)" radius={4} />
-          </BarChart>
-        </ChartContainer>
-      </div>
-      <div>
-        <h3 className="mb-4 text-lg font-semibold">Peak Robot Resistance per Session</h3>
-         <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <LineChart accessibilityLayer data={chartData} margin={{ left: 12, right: 12 }}>
-            <CartesianGrid vertical={false} />
-            <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
-            <YAxis unit="%" />
-            <Tooltip content={<ChartTooltipContent />} />
-            <Line dataKey="robotResistance" type="monotone" stroke="var(--color-robotResistance)" strokeWidth={2} dot={true} />
-          </LineChart>
-        </ChartContainer>
-      </div>
-    </div>
+     <Card>
+        <CardHeader>
+          <CardTitle>Performance Analysis</CardTitle>
+          <CardDescription>Visualizing patient progress over recent sessions.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                <div className="h-[300px] w-full">
+                    <h4 className="mb-2 text-sm font-medium text-muted-foreground">Max Range of Motion</h4>
+                    <ChartContainer config={chartConfig}>
+                    <BarChart accessibilityLayer data={chartData}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                        <YAxis unit="°" />
+                        <Tooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="rangeOfMotion" fill="var(--color-rangeOfMotion)" radius={4} />
+                    </BarChart>
+                    </ChartContainer>
+                </div>
+                <div className="h-[300px] w-full">
+                    <h4 className="mb-2 text-sm font-medium text-muted-foreground">Peak Robot Resistance</h4>
+                    <ChartContainer config={chartConfig}>
+                    <LineChart accessibilityLayer data={chartData} margin={{ left: 12, right: 12 }}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                        <YAxis unit="%" />
+                        <Tooltip content={<ChartTooltipContent />} />
+                        <Line dataKey="robotResistance" type="monotone" stroke="var(--color-robotResistance)" strokeWidth={2} dot={true} />
+                    </LineChart>
+                    </ChartContainer>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
   );
 }

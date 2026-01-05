@@ -138,15 +138,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
           <TabsTrigger value="history">Session History</TabsTrigger>
         </TabsList>
         <TabsContent value="progress">
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Analysis</CardTitle>
-              <CardDescription>Visualizing patient progress over recent sessions.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ProgressCharts sessions={patient.sessions || []} />
-            </CardContent>
-          </Card>
+          <ProgressCharts sessions={patient.sessions || []} />
         </TabsContent>
         <TabsContent value="history">
            <Card>
