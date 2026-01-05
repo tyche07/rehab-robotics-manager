@@ -54,6 +54,7 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
   const sessionStartTime = useRef<Date | null>(null);
 
   const [controlMode, setControlMode] = useState('impedance');
+  const [actuationSystem, setActuationSystem] = useState('sea');
   const [safetyStatus, setSafetyStatus] = useState('normal'); // normal, warning, error
 
   const [isLoadingAi, setIsLoadingAi] = useState(false);
@@ -237,7 +238,7 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
         </CardHeader>
         <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <Label htmlFor="control-mode">Control Mode</Label>
                 <Select value={controlMode} onValueChange={setControlMode} disabled={!isSessionActive}>
                   <SelectTrigger id="control-mode">
@@ -250,30 +251,44 @@ export function SessionControls({ patient, onDataPoint }: SessionControlsProps) 
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-end gap-2">
-                  <Button onClick={handleSessionToggle} className="w-full" variant={isSessionActive ? 'secondary' : 'default'}>
-                    {isSessionActive ? 'End & Save Session' : 'Start Session'}
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" className="w-full">
-                        <XCircle className="mr-2 h-4 w-4" /> Emergency Stop
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure you want to activate the Emergency Stop?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will immediately and forcefully halt all robotic movement and end the current session. This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleEmergencyStop}>Confirm Stop</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+               <div className="space-y-2">
+                <Label htmlFor="actuation-system">Actuation System</Label>
+                <Select value={actuationSystem} onValueChange={setActuationSystem} disabled={!isSessionActive}>
+                  <SelectTrigger id="actuation-system">
+                    <SelectValue placeholder="Select actuation system" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sea">Series Elastic Actuator (SEA)</SelectItem>
+                    <SelectItem value="bldc">Brushless DC Motor (BLDC)</SelectItem>
+                    <SelectItem value="hydraulic">Hydraulic Actuator</SelectItem>
+                    <SelectItem value="pneumatic">Pneumatic Muscle</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
+            <div className="flex items-end gap-2">
+                <Button onClick={handleSessionToggle} className="w-full" variant={isSessionActive ? 'secondary' : 'default'}>
+                  {isSessionActive ? 'End & Save Session' : 'Start Session'}
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">
+                      <XCircle className="mr-2 h-4 w-4" /> Emergency Stop
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure you want to activate the Emergency Stop?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will immediately and forcefully halt all robotic movement and end the current session. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleEmergencyStop}>Confirm Stop</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
             </div>
         </CardContent>
       </Card>
