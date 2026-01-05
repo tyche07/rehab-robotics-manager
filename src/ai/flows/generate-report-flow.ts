@@ -9,55 +9,15 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import type { Patient, Session } from '@/lib/types';
-
-// We can't pass the full patient object because of circular references with session data.
-const PatientInfoSchema = z.object({
-  name: z.string(),
-  age: z.number(),
-  condition: z.string(),
-  therapyGoals: z.array(z.string()),
-});
-
-const SessionDataSchema = z.object({
-  time: z.number(),
-  rangeOfMotion: z.number(),
-  robotResistance: z.number(),
-  muscleLoad: z.number(),
-});
-
-const SessionInfoSchema = z.object({
-  id: z.string(),
-  date: z.string(),
-  duration: z.number(),
-  notes: z.string(),
-  data: z.array(SessionDataSchema),
-});
-
-export const GenerateReportInputSchema = z.object({
-  patient: PatientInfoSchema,
-  sessions: z.array(SessionInfoSchema),
-});
-export type GenerateReportInput = z.infer<typeof GenerateReportInputSchema>;
-
-const ProcessedSessionInfoSchema = SessionInfoSchema.extend({
-  peakRangeOfMotion: z.number(),
-  peakRobotResistance: z.number(),
-});
-
-const ProcessedGenerateReportInputSchema = z.object({
-  patient: PatientInfoSchema,
-  sessions: z.array(ProcessedSessionInfoSchema),
-});
+import {
+    GenerateReportInputSchema,
+    GenerateReportOutputSchema,
+    type GenerateReportInput,
+    ProcessedGenerateReportInputSchema
+} from '@/lib/types';
 
 
-export const GenerateReportOutputSchema = z.object({
-  executiveSummary: z.string().describe("A high-level summary of the patient's progress, condition, and therapy engagement. Should be 2-3 sentences."),
-  progressAnalysis: z.string().describe("A detailed analysis of the patient's progress over the provided sessions. Comment on trends in range of motion, resistance tolerance, and muscle load. Identify areas of improvement and plateaus."),
-  futureRecommendations: z.string().describe("Provide concrete recommendations for future therapy sessions. Suggest adjustments to goals, exercises, or robot parameters. Mention any potential areas to monitor closely."),
-});
-export type GenerateReportOutput = z.infer<typeof GenerateReportOutputSchema>;
+export type { GenerateReportInput, GenerateReportOutput } from '@/lib/types';
 
 
 export async function generateTherapyReport(
@@ -111,8 +71,8 @@ const generateReportFlow = ai.defineFlow(
     // Pre-process the session data to calculate max values before sending to the prompt.
     const processedSessions = input.sessions.map(session => ({
         ...session,
-        peakRangeOfMotion: Math.max(...session.data.map(d => d.rangeOfMotion)),
-        peakRobotResistance: Math.max(...session.data.map(d => d.robotResistance)),
+        peakRangeOfMotion: Math.max(0, ...session.data.map(d => d.rangeOfMotion)),
+        peakRobotResistance: Math.max(0, ...session.data.map(d => d.robotResistance)),
     }));
 
     const processedInput = {
