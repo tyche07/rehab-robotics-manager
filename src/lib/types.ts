@@ -90,3 +90,51 @@ export const GenerateReportOutputSchema = z.object({
   futureRecommendations: z.string().describe("Provide concrete recommendations for future therapy sessions. Suggest adjustments to goals, exercises, or robot parameters. Mention any potential areas to monitor closely."),
 });
 export type GenerateReportOutput = z.infer<typeof GenerateReportOutputSchema>;
+
+// Schemas for AI Scheduler
+
+const AvailabilitySchema = z.object({
+  day: z.string().describe('Day of the week (e.g., "Monday") or "Any".'),
+  startTime: z.string().describe('Start time in HH:MM AM/PM format.'),
+  endTime: z.string().describe('End time in HH:MM AM/PM format.'),
+});
+export type Availability = z.infer<typeof AvailabilitySchema>;
+
+
+const ExistingAppointmentSchema = z.object({
+    patientName: z.string(),
+    date: z.string().describe("Date of the appointment in 'yyyy-MM-dd' format."),
+    time: z.string().describe("Start time of the appointment in 'hh:mm AM/PM' format."),
+    duration: z.number().describe("Duration of the appointment in minutes."),
+    therapistId: z.string(),
+});
+
+export const ScheduleOptimizerInputSchema = z.object({
+  patientAvailability: z.array(z.any()),
+  therapistAvailability: z.array(z.any()),
+  robotAvailability: z.array(z.any()),
+  existingAppointments: z.array(ExistingAppointmentSchema),
+  schedulingGoal: z.string().describe('A high-level goal for the scheduler to achieve.'),
+  constraints: z.array(z.string()).describe('A list of hard rules and constraints the schedule must follow.'),
+  dateRange: z.object({
+    start: z.string().describe("The start date for the search range in ISO format."),
+    end: z.string().describe("The end date for the search range in ISO format."),
+  }),
+});
+export type ScheduleOptimizerInput = z.infer<typeof ScheduleOptimizerInputSchema>;
+
+
+const SuggestedSlotSchema = z.object({
+    patientName: z.string().describe("The name of the patient for the appointment."),
+    date: z.string().describe("The suggested date for the appointment in 'yyyy-MM-dd' format."),
+    startTime: z.string().describe("The suggested start time in 'hh:mm AM/PM' format."),
+    endTime: z.string().describe("The suggested end time in 'hh:mm AM/PM' format."),
+    therapistId: z.string().describe("The ID of the assigned therapist."),
+    robotId: z.string().describe("The ID of the assigned robot."),
+});
+
+export const ScheduleOptimizerOutputSchema = z.object({
+    suggestedSlots: z.array(SuggestedSlotSchema).describe("An array of optimized appointment slots."),
+    justification: z.string().describe("A brief explanation of why this schedule is optimal and how it respects the provided constraints.")
+});
+export type ScheduleOptimizerOutput = z.infer<typeof ScheduleOptimizerOutputSchema>;

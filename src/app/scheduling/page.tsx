@@ -4,12 +4,18 @@
 import * as React from 'react';
 import { addDays, format, isSameDay } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { Sparkles, Loader2 } from 'lucide-react';
+import { ScheduleSuggestionDialog } from '@/components/scheduling/schedule-suggestion-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { optimizeSchedule } from '@/ai/flows/schedule-optimizer-flow';
+import type { ScheduleOptimizerOutput } from '@/lib/types';
+import { getSchedulingData } from '@/lib/scheduling-tools';
 
 const mockAppointments = [
     {
@@ -61,7 +67,31 @@ const mockAppointments = [
 
 
 export default function SchedulingPage() {
+    const { toast } = useToast();
     const [date, setDate] = React.useState<Date | undefined>(new Date());
+    const [isGenerating, setIsGenerating] = React.useState(false);
+    const [suggestion, setSuggestion] = React.useState<ScheduleOptimizerOutput | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+
+
+    const handleGenerateSchedule = async () => {
+        setIsGenerating(true);
+        try {
+            const result = await optimizeSchedule(getSchedulingData());
+            setSuggestion(result);
+            setIsDialogOpen(true);
+        } catch (error) {
+            console.error("Failed to generate schedule:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Scheduling Failed',
+                description: 'Could not generate an optimized schedule. Please try again later.'
+            });
+        } finally {
+            setIsGenerating(false);
+        }
+    }
+
 
     const DayCell = React.memo(function DayCell({ date, displayMonth }: { date: Date; displayMonth: Date }) {
       const appointmentsForDay = mockAppointments.filter(apt => isSameDay(apt.date, date));
@@ -89,10 +119,17 @@ export default function SchedulingPage() {
 
 
   return (
+    <>
     <Card>
-      <CardHeader>
-        <CardTitle>Therapy Scheduling</CardTitle>
-        <CardDescription>Manage patient appointments and therapist availability.</CardDescription>
+      <CardHeader className="flex-row items-center justify-between">
+        <div>
+            <CardTitle>Therapy Scheduling</CardTitle>
+            <CardDescription>Manage patient appointments and therapist availability.</CardDescription>
+        </div>
+        <Button onClick={handleGenerateSchedule} disabled={isGenerating}>
+            {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2" />}
+            Generate Optimal Schedule
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="rounded-lg border">
@@ -122,5 +159,13 @@ export default function SchedulingPage() {
         </div>
       </CardContent>
     </Card>
+    {suggestion && (
+        <ScheduleSuggestionDialog 
+            isOpen={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            suggestion={suggestion}
+        />
+    )}
+    </>
   );
 }
