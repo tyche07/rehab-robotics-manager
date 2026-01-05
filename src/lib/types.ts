@@ -39,6 +39,9 @@ export interface Patient {
   sessions: Session[];
 }
 
+// Omit 'id' for creating new patients, as Firestore will generate it.
+export type NewPatient = Omit<Patient, 'id'>;
+
 
 // Schema for AI-generated reports
 
