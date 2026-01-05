@@ -21,10 +21,11 @@ import { Move3d } from '@/components/ui/move-3d';
 import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 
-export default function PatientDetailPage({ params }: { params: { id: string } }) {
+export default function PatientDetailPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const { id: patientId } = params;
+  const params = useParams();
+  const patientId = params.id as string;
 
   const patientRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || !patientId) return null;
