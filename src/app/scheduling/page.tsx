@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
-import { Sparkles, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, Loader2, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { ScheduleSuggestionDialog } from '@/components/scheduling/schedule-suggestion-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { optimizeSchedule } from '@/ai/flows/schedule-optimizer-flow';
@@ -123,9 +123,6 @@ export default function SchedulingPage() {
     const getAppointmentForSlot = (day: Date, time: string) => {
         return mockAppointments.find(apt => {
             const aptDate = new Date(apt.date);
-            const aptTime = format(aptDate.setHours(parseInt(time.split(':')[0]), 0), 'HH:00');
-            const slotTime = format(new Date().setHours(parseInt(time.split(':')[0]), 0), 'HH:00');
-            
             return aptDate.getFullYear() === day.getFullYear() &&
                    aptDate.getMonth() === day.getMonth() &&
                    aptDate.getDate() === day.getDate() &&
@@ -159,49 +156,56 @@ export default function SchedulingPage() {
       <CardContent>
         <div className="flex flex-col md:flex-row gap-6">
             {/* Smart Filters Column */}
-            <div className="w-full md:w-1/4 space-y-4">
-                <h3 className="text-lg font-semibold">Smart Filters</h3>
-                 <div className="space-y-2">
-                    <Label>Therapist</Label>
-                    <Select defaultValue="all">
-                        <SelectTrigger><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Therapists</SelectItem>
-                            <SelectItem value="mehta">Dr. Mehta</SelectItem>
-                            <SelectItem value="chen">Dr. Chen</SelectItem>
-                        </SelectContent>
-                    </Select>
-                 </div>
-                  <div className="space-y-2">
-                    <Label>Robot</Label>
-                    <Select defaultValue="all">
-                        <SelectTrigger><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Robots</SelectItem>
-                            <SelectItem value="exo02">EXO-02</SelectItem>
-                            <SelectItem value="exo03">EXO-03</SelectItem>
-                             <SelectItem value="exo04">EXO-04</SelectItem>
-                        </SelectContent>
-                    </Select>
-                 </div>
-                  <div className="space-y-2">
-                    <Label>Patient</Label>
-                    <Select defaultValue="all">
-                        <SelectTrigger><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Patients</SelectItem>
-                            <SelectItem value="ananya">Ananya S.</SelectItem>
-                            <SelectItem value="rajesh">Rajesh Kumar</SelectItem>
-                             <SelectItem value="priya">Priya Sharma</SelectItem>
-                              <SelectItem value="amit">Amit Patel</SelectItem>
-                        </SelectContent>
-                    </Select>
-                 </div>
-                 <Button variant="outline" className="w-full">[+ New Slot]</Button>
+            <div className="group relative w-full md:w-16 md:hover:w-64 transition-all duration-300 ease-in-out">
+                <div className="md:absolute md:inset-y-0 md:left-0 h-full w-full overflow-hidden rounded-lg border bg-card p-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 flex-shrink-0" />
+                    <h3 className="text-lg font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100">Smart Filters</h3>
+                  </div>
+                  <div className="mt-4 space-y-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 md:w-56">
+                    <div className="space-y-2">
+                        <Label>Therapist</Label>
+                        <Select defaultValue="all">
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Therapists</SelectItem>
+                                <SelectItem value="mehta">Dr. Mehta</SelectItem>
+                                <SelectItem value="chen">Dr. Chen</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Robot</Label>
+                        <Select defaultValue="all">
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Robots</SelectItem>
+                                <SelectItem value="exo02">EXO-02</SelectItem>
+                                <SelectItem value="exo03">EXO-03</SelectItem>
+                                <SelectItem value="exo04">EXO-04</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Patient</Label>
+                        <Select defaultValue="all">
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Patients</SelectItem>
+                                <SelectItem value="ananya">Ananya S.</SelectItem>
+                                <SelectItem value="rajesh">Rajesh Kumar</SelectItem>
+                                <SelectItem value="priya">Priya Sharma</SelectItem>
+                                <SelectItem value="amit">Amit Patel</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <Button variant="outline" className="w-full whitespace-nowrap">[+ New Slot]</Button>
+                  </div>
+                </div>
             </div>
 
             {/* Weekly View Column */}
-            <div className="w-full md:w-3/4">
+            <div className="flex-1">
                 <div className="flex items-center justify-between mb-4">
                      <h3 className="text-lg font-semibold">
                         {format(weekDays[0], 'MMMM d')} - {format(weekDays[4], 'd, yyyy')}
