@@ -45,22 +45,15 @@ export default function PatientDetailPage() {
     return { latestSession: latest, maxRom, peakResistance, peakMuscleLoad };
   }, [patient]);
   
-  const isLoading = isAuthLoading || (patientId && isPatientLoading) || (!patient && isPatientLoading);
+  const isLoading = isAuthLoading || isPatientLoading;
 
   if (isLoading) {
     return <PatientDetailSkeleton />;
   }
 
-  if (!patient && !isLoading) {
+  if (!patient) {
     notFound();
   }
-  
-  // This check is now safe because isLoading is false.
-  if (!patient) {
-      // This can happen if the user navigates to a non-existent patient ID
-      notFound();
-  }
-
 
   return (
     <div className="space-y-6">
@@ -261,5 +254,7 @@ function PatientDetailSkeleton() {
     </div>
   )
 }
+
+    
 
     
