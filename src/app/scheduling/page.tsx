@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const mockAppointments = [
@@ -79,18 +78,18 @@ export default function SchedulingPage() {
                 head_row: "flex justify-between",
                 head_cell: "text-muted-foreground rounded-md w-full justify-between",
                 row: "flex w-full mt-2 justify-between",
-                cell: "h-16 w-full text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                day: "h-16 w-full p-1 font-normal aria-selected:opacity-100",
+                cell: "h-14 w-full text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                day: "h-14 w-full p-1 font-normal aria-selected:opacity-100",
                 day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
               }}
               components={{
                 DayContent: ({ date }) => {
                     const hasAppointment = mockAppointments.some(apt => isSameDay(apt.date, date));
                     return (
-                        <div className="relative h-full w-full">
-                            <span className="absolute top-1 left-1">{format(date, 'd')}</span>
+                        <div className="relative flex h-full w-full flex-col items-center justify-center">
+                            <span className="absolute top-1 left-1.5 text-xs">{format(date, 'd')}</span>
                             {hasAppointment && (
-                                <div className="absolute bottom-1 left-1/2 -translate-x-1/2 h-2 w-2 rounded-full bg-primary" />
+                                <div className="mt-2 h-2 w-2 rounded-full bg-primary" />
                             )}
                         </div>
                     );
